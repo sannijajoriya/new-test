@@ -1,8 +1,4 @@
 
-
-
-
-
 export interface Category {
   id: string;
   name: string;
@@ -15,7 +11,7 @@ export interface Category {
 }
 
 export interface Question {
-  id:string;
+  id: string;
   text: string;
   options: string[];
   correctAnswer: string;
@@ -25,34 +21,35 @@ export interface Question {
 export interface Test {
   id: string;
   title: string;
-  duration: number; // in minutes
+  duration: number; 
   questions: Question[];
   marksPerCorrect: number;
   negativeMarksPerWrong: number;
   guidelines?: string;
-  categoryId?: string;
+  categoryId?: string | null;
 }
 
 export interface User {
   id: string;
   fullName: string;
   email: string;
+  password?: string;
   profilePictureUrl?: string;
   role: 'student' | 'admin';
-  createdAt: number;
+  createdAt?: Date;
 }
 
 export interface Result {
-  id: string; // Composite key: `${userId}_${testId}`
+  id: string; 
   testId: string;
   userId: string;
-  score: number; // final calculated score
+  score: number;
   correctCount: number;
   wrongCount: number;
   unansweredCount: number;
-  timeTaken: number; // in seconds
-  answers: Record<string, string>; // { questionId: selectedOption }
-  submittedAt: number; // timestamp
+  timeTaken: number; 
+  answers: Record<string, string>; 
+  submittedAt: number; 
 }
 
 export interface ChatMessage {
@@ -83,7 +80,7 @@ export interface DirectMessage {
 }
 
 export interface ChatThread {
-  id: string; // studentId
+  id: string; 
   studentId: string;
   studentName: string;
   messages: DirectMessage[];
@@ -104,7 +101,7 @@ export interface Feedback {
 }
 
 export interface SiteSettings {
-  id?: 'default'; // Singleton document
+  id?: 'default';
   logoUrl?: string;
   botName?: string;
   botAvatarUrl?: string;
@@ -125,7 +122,7 @@ export interface SiteSettings {
 export interface SarthiBotMessage {
   role: 'user' | 'bot';
   text: string;
-  image?: string; // dataURI for user's image
+  image?: string; 
 }
 
 export interface SarthiBotTrainingData {
@@ -135,7 +132,7 @@ export interface SarthiBotTrainingData {
 }
 
 export interface SarthiBotConversation {
-    id: string; // studentId
+    id: string; 
     studentId: string;
     studentName: string;
     messages: SarthiBotMessage[];
@@ -151,68 +148,4 @@ export interface ChatHistory {
       contentType?: string;
     };
   }[];
-}
-
-// For Supabase client typing
-export interface AllData {
-  public: {
-    Tables: {
-      tests: {
-        Row: Test;
-        Insert: Omit<Test, 'id'>;
-        Update: Partial<Test>;
-      };
-      categories: {
-        Row: Category;
-        Insert: Omit<Category, 'id'>;
-        Update: Partial<Category>;
-      };
-      users: {
-        Row: User;
-        Insert: Omit<User, 'id'>;
-        Update: Partial<User>;
-      };
-       results: {
-        Row: Result;
-        Insert: Omit<Result, 'id'>;
-        Update: Partial<Result>;
-      };
-       reports: {
-        Row: Report;
-        Insert: Omit<Report, 'id'>;
-        Update: Partial<Report>;
-      };
-      chatThreads: {
-        Row: ChatThread;
-        Insert: Omit<ChatThread, 'id'>;
-        Update: Partial<ChatThread>;
-      };
-      sarthiBotTrainingData: {
-        Row: SarthiBotTrainingData;
-        Insert: Omit<SarthiBotTrainingData, 'id'>;
-        Update: Partial<SarthiBotTrainingData>;
-      };
-      sarthiBotConversations: {
-        Row: SarthiBotConversation;
-        Insert: Omit<SarthiBotConversation, 'id'>;
-        Update: Partial<SarthiBotConversation>;
-      };
-      studentFeedbacks: {
-        Row: Feedback;
-        Insert: Omit<Feedback, 'id'>;
-        Update: Partial<Feedback>;
-      };
-      siteSettings: {
-        Row: SiteSettings;
-        Insert: SiteSettings;
-        Update: Partial<SiteSettings>;
-      };
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
-  };
 }

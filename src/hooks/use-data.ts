@@ -2,10 +2,18 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, createContext, useContext, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
 import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainingData, SarthiBotConversation, Feedback, SiteSettings } from '@/lib/types';
 import { useLoading } from './use-loading';
 import { useAuth } from './use-auth';
+import { 
+    fetchTests, fetchCategories, fetchAllUsers, fetchResults, fetchReports, 
+    fetchChatThreads, fetchSarthiBotTrainingData, fetchSarthiBotConversations, 
+    fetchStudentFeedbacks, fetchSiteSettings, upsertUser, upsertTest,
+    removeTest, upsertCategory, removeCategory, upsertResult, upsertReport,
+    upsertChatThread, removeChatThread, saveSarthiBotTrainingData,
+    upsertSarthiBotConversation, removeSarthiBotConversation,
+    saveFeedbacks, upsertSiteSettings, removeStudent
+} from '@/actions/data-actions';
 
 interface DataContextType {
     user: User | null;
@@ -44,7 +52,7 @@ const defaultSiteSettings: SiteSettings = {
     botIntroMessage: 'नमस्ते! मैं उड़ान सारथी हूँ। मैं आपकी पढ़ाई में कैसे मदद कर सकता हूँ?',
     isBotEnabled: true, isNewsBannerEnabled: false, newsBannerImageUrl: '', newsBannerTitle: '',
     newsBannerLink: '', newsBannerDisplayRule: 'session',
-    heroBannerText: 'Your Journey to Success Starts Here.\nGuided by AI. Designed for Results.',
+    heroBannerText: 'Your Journey to Success Starts Here.\\nGuided by AI. Designed for Results.',
     isHeroBannerTextEnabled: true, heroBannerImageUrl: 'https://placehold.co/1200x480.png',
     heroBannerOverlayOpacity: 0.3, adminChatAutoReply: "Thanks for reaching out! An admin will get back to you as soon as possible.",
 };
@@ -67,140 +75,144 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     const { setLoading: setAppLoading } = useLoading();
 
-    const fetchData = useCallback(async () => {
+    const loadAllData = useCallback(async (currentUser: User) => {
         setIsLoading(true);
         setAppLoading(true);
 
         try {
-            const fetchPromises = [
-                supabase.from('tests').select('*'),
-                supabase.from('categories').select('*'),
-                supabase.from('results').select('*'),
-                supabase.from('reports').select('*'),
-                supabase.from('chatThreads').select('*'),
-                supabase.from('sarthiBotTrainingData').select('*'),
-                supabase.from('sarthiBotConversations').select('*'),
-                supabase.from('studentFeedbacks').select('*'),
-                supabase.from('siteSettings').select('*').eq('id', 'default').maybeSingle(),
-            ];
-
-            // Only fetch all users if the logged-in user is an admin
-            if (user?.role === 'admin') {
-                fetchPromises.push(supabase.from('users').select('*'));
-            }
-
             const [
                 testsRes, categoriesRes, resultsRes, reportsRes, chatThreadsRes,
                 sarthiBotTrainingDataRes, sarthiBotConversationsRes, studentFeedbacksRes,
                 siteSettingsRes, allUsersRes
-            ] = await Promise.all(fetchPromises);
+            ] = await Promise.all([
+                fetchTests(),
+                fetchCategories(),
+                fetchResults(),
+                fetchReports(),
+                fetchChatThreads(),
+                fetchSarthiBotTrainingData(),
+                fetchSarthiBotConversations(),
+                fetchStudentFeedbacks(),
+                fetchSiteSettings(),
+                currentUser.role === 'admin' ? fetchAllUsers() : Promise.resolve([currentUser]),
+            ]);
 
-            setTests(testsRes.data as Test[] || []);
-            setCategories(categoriesRes.data as Category[] || []);
-            setResults(resultsRes.data as Result[] || []);
-            setReports(reportsRes.data as Report[] || []);
-            setChatThreads(chatThreadsRes.data as ChatThread[] || []);
-            setSarthiBotTrainingData(sarthiBotTrainingDataRes.data as SarthiBotTrainingData[] || []);
-            setSarthiBotConversations(sarthiBotConversationsRes.data as SarthiBotConversation[] || []);
-            setStudentFeedbacks(studentFeedbacksRes.data as Feedback[] || []);
-            setSiteSettings(siteSettingsRes.data ? { ...defaultSiteSettings, ...siteSettingsRes.data } : defaultSiteSettings);
-
-            if (allUsersRes) {
-                setAllUsers(allUsersRes.data as User[] || []);
-            }
+            setTests(testsRes as Test[] || []);
+            setCategories(categoriesRes as Category[] || []);
+            setResults(resultsRes as Result[] || []);
+            setReports(reportsRes as Report[] || []);
+            setChatThreads(chatThreadsRes as ChatThread[] || []);
+            setSarthiBotTrainingData(sarthiBotTrainingDataRes as SarthiBotTrainingData[] || []);
+            setSarthiBotConversations(sarthiBotConversationsRes as SarthiBotConversation[] || []);
+            setStudentFeedbacks(studentFeedbacksRes as Feedback[] || []);
+            const settingsData = siteSettingsRes as SiteSettings;
+            setSiteSettings(settingsData ? { ...defaultSiteSettings, ...settingsData } : defaultSiteSettings);
             
+            setAllUsers(allUsersRes as User[] || []);
+
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
             setIsLoading(false);
             setAppLoading(false);
         }
-    }, [setAppLoading, user?.role]);
+    }, [setAppLoading]);
 
     useEffect(() => {
         if (authUser) {
-            const fetchUserProfile = async () => {
-                const { data, error } = await supabase.from('users').select('*').eq('id', authUser.id).single();
-                if (data) {
-                    setUser(data as User);
-                } else if (error) {
-                    console.error("Error fetching user profile:", error);
-                    setUser(null); // Explicitly set user to null on error
-                }
-            };
-            fetchUserProfile();
+            const userInAllUsers = allUsers?.find(u => u.id === authUser.id);
+            if (userInAllUsers) {
+                setUser(userInAllUsers);
+            } else {
+                // Fetch all users to find the current user if not already loaded
+                fetchAllUsers().then(users => {
+                    const foundUser = (users as User[]).find(u => u.id === authUser.id);
+                    setAllUsers(users as User[]);
+                    if (foundUser) {
+                        setUser(foundUser);
+                        loadAllData(foundUser);
+                    }
+                });
+            }
         } else {
             setUser(null);
         }
-    }, [authUser]);
+    }, [authUser, allUsers, loadAllData]);
 
-    useEffect(() => {
-        // Fetch all data once the user profile is loaded
-        if (user) {
-            fetchData();
-        } else if (!authUser) {
-             // If there's no auth user, we can still load public data like site settings
-             setIsLoading(true);
-             supabase.from('siteSettings').select('*').eq('id', 'default').maybeSingle().then(({data}) => {
-                setSiteSettings(data ? { ...defaultSiteSettings, ...data } : defaultSiteSettings);
-                setIsLoading(false);
-             });
-        }
-    }, [user, fetchData, authUser]);
+    const updateUser = useCallback(async (userId: string, data: Partial<User>) => {
+        await upsertUser({ ...data, id: userId });
+        await loadAllData(user!);
+    }, [loadAllData, user]);
 
-    const genericUpdate = async (tableName: string, item: any) => {
-        const { error } = await supabase.from(tableName).upsert(item);
-        if (error) throw error;
-        await fetchData();
-    };
-    
-    const genericDelete = async (tableName: string, itemId: string) => {
-        const { error } = await supabase.from(tableName).delete().eq('id', itemId);
-        if (error) throw error;
-        await fetchData();
-    };
-    
-    const updateUser = useCallback(async (userId: string, data: Partial<User>) => genericUpdate('users', { id: userId, ...data }), [fetchData]);
-    const updateTest = useCallback(async (test: Test) => genericUpdate('tests', { id: test.id || `test-${Date.now()}`, ...test }), [fetchData]);
-    const deleteTest = useCallback(async (testId: string) => genericDelete('tests', testId), [fetchData]);
-    const updateCategory = useCallback(async (category: Category) => genericUpdate('categories', { id: category.id || `cat-${Date.now()}`, ...category }), [fetchData]);
+    const updateTest = useCallback(async (test: Test) => {
+        await upsertTest(test);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
+
+    const deleteTest = useCallback(async (testId: string) => {
+        await removeTest(testId);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
+
+    const updateCategory = useCallback(async (category: Category) => {
+        await upsertCategory(category);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
     
     const deleteCategory = useCallback(async (categoryId: string, deleteTests: boolean) => {
-        if (deleteTests) {
-            await supabase.from('tests').delete().eq('categoryId', categoryId);
-        }
-        await genericDelete('categories', categoryId);
-    }, [fetchData]);
+        await removeCategory(categoryId, deleteTests);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
     
     const deleteStudent = useCallback(async (studentId: string) => {
-        // This should be handled via a Supabase Function for security to cascade deletes.
-        // For now, just deleting from the users table. Auth user must be deleted separately.
-        await genericDelete('users', studentId);
-    }, [fetchData]);
+        await removeStudent(studentId);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
 
-    const updateResult = useCallback(async (result: Result) => genericUpdate('results', result), [fetchData]);
-    const updateReport = useCallback(async (report: Report) => genericUpdate('reports', report), [fetchData]);
-    const updateChatThread = useCallback(async (thread: ChatThread) => genericUpdate('chatThreads', thread), [fetchData]);
-    const deleteChatThread = useCallback(async (threadId: string) => genericDelete('chatThreads', threadId), [fetchData]);
-    const updateSarthiBotConversation = useCallback(async (conversation: SarthiBotConversation) => genericUpdate('sarthiBotConversations', conversation), [fetchData]);
-    const deleteSarthiBotConversation = useCallback(async (conversationId: string) => genericDelete('sarthiBotConversations', conversationId), [fetchData]);
+    const updateResult = useCallback(async (result: Result) => {
+        await upsertResult(result);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
+
+    const updateReport = useCallback(async (report: Report) => {
+        await upsertReport(report);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
+
+    const updateChatThread = useCallback(async (thread: ChatThread) => {
+        await upsertChatThread(thread);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
+
+    const deleteChatThread = useCallback(async (threadId: string) => {
+        await removeChatThread(threadId);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
+
+    const updateSarthiBotConversation = useCallback(async (conversation: SarthiBotConversation) => {
+        await upsertSarthiBotConversation(conversation);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
+    
+    const deleteSarthiBotConversation = useCallback(async (conversationId: string) => {
+        await removeSarthiBotConversation(conversationId);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
     
     const updateSarthiBotTrainingData = useCallback(async (data: SarthiBotTrainingData[]) => {
-        await supabase.from('sarthiBotTrainingData').delete().neq('id', 'dummy-id-to-delete-all');
-        const { error } = await supabase.from('sarthiBotTrainingData').insert(data);
-        if (error) throw error;
-        await fetchData();
-    }, [fetchData]);
+        await saveSarthiBotTrainingData(data);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
     
     const updateFeedbacks = useCallback(async (feedbacks: Feedback[]) => {
-        const { error } = await supabase.from('studentFeedbacks').upsert(feedbacks);
-        if (error) throw error;
-        await fetchData();
-    }, [fetchData]);
+        await saveFeedbacks(feedbacks);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
 
     const updateSiteSettings = useCallback(async (settings: Partial<SiteSettings>) => {
-        await genericUpdate('siteSettings', { id: 'default', ...settings });
-    }, [fetchData]);
+        await upsertSiteSettings(settings);
+        await loadAllData(user!);
+    }, [loadAllData, user]);
     
     const value = useMemo(() => ({
         user, tests, categories, allUsers, results, reports,
@@ -231,66 +243,53 @@ export const useData = () => {
     return context;
 };
 
-// Convenience hooks
 export const useUser = () => useData().user;
-
 export const useTests = () => {
     const { tests, isLoading, updateTest, deleteTest } = useData();
     return { data: tests, isLoading, updateItem: updateTest, deleteItem: deleteTest };
 }
-
 export const useCategories = () => {
     const { categories, isLoading, updateCategory, deleteCategory } = useData();
     return { data: categories, isLoading, updateItem: updateCategory, deleteCategory };
 }
-
 export const useAllUsers = () => {
     const { allUsers, isLoading, updateUser } = useData();
     return { allUsers: allUsers || [], isLoading, updateUser };
 }
-
 export const useStudents = () => {
     const { allUsers, isLoading, deleteStudent } = useData();
     const students = useMemo(() => allUsers?.filter(u => u.role === 'student'), [allUsers]);
     return { students, deleteStudent, isLoading };
 }
-
 export const useAdminUser = () => {
     const { allUsers, isLoading } = useData();
     const adminUser = useMemo(() => allUsers?.find(u => u.role === 'admin'), [allUsers]);
     return { adminUser, isLoading };
 }
-
 export const useResults = () => {
     const { results, isLoading, updateResult } = useData();
     return { data: results, isLoading, updateItem: updateResult };
 }
-
 export const useReports = () => {
     const { reports, isLoading, updateReport } = useData();
     return { data: reports, updateItem: updateReport, isLoading };
 }
-
 export const useChatThreads = () => {
     const { chatThreads, isLoading, updateChatThread, deleteChatThread } = useData();
     return { data: chatThreads, isLoading, updateItem: updateChatThread, deleteItem: deleteChatThread };
 }
-
 export const useSarthiBotTrainingData = () => {
     const { sarthiBotTrainingData, isLoading, updateSarthiBotTrainingData } = useData();
     return { trainingData: sarthiBotTrainingData, updateSarthiBotTrainingData, isLoading };
 }
-
 export const useSarthiBotConversations = () => {
     const { sarthiBotConversations, isLoading, updateSarthiBotConversation, deleteSarthiBotConversation } = useData();
     return { conversations: sarthiBotConversations, updateSarthiBotConversation, deleteSarthiBotConversation, isLoading };
 }
-
 export const useFeedbacks = () => {
     const { studentFeedbacks, isLoading, updateFeedbacks } = useData();
     return { data: studentFeedbacks, updateFeedbacks, isLoading };
 }
-
 export const useSiteSettings = () => {
     const { siteSettings, isLoading, updateSiteSettings } = useData();
     return { settings: siteSettings, updateSettings: updateSiteSettings, isLoading };

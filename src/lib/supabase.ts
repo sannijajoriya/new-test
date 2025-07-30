@@ -1,8 +1,3 @@
 
-import { createClient } from '@supabase/supabase-js'
-import type { AllData } from './types';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createClient<AllData['public']>(supabaseUrl, supabaseAnonKey)
+// This file is no longer used for database connection but can be kept for other Supabase services if needed.
+// For now, it's empty to avoid conflicts.
