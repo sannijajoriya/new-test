@@ -1,4 +1,5 @@
 
+import './env';
 import type {NextConfig} from 'next';
 import 'dotenv/config'
 
