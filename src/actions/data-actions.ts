@@ -7,7 +7,7 @@ import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainin
 
 const prisma = new PrismaClient();
 
-// Helper to handle JSON conversion for Prisma
+// Helper to handle JSON conversion for Prisma - no longer needed for fields that are now JSON type
 function serialize<T>(data: T): T {
     return JSON.parse(JSON.stringify(data, (key, value) =>
         typeof value === 'bigint' ? value.toString() : value
@@ -17,12 +17,14 @@ function serialize<T>(data: T): T {
 // Fetch Actions
 export async function fetchTests(): Promise<Test[]> {
   const tests = await prisma.test.findMany();
-  return tests.map(test => ({...test, questions: JSON.parse(test.questions as string) as Question[]})) as Test[];
+  // No need to parse questions as it's now a JSON type
+  return tests as Test[];
 }
 
 export async function fetchCategories(): Promise<Category[]> {
   const categories = await prisma.category.findMany();
-  return categories.map(c => ({...c, features: c.features ? (c.features as string).split(',') : [] })) as Category[];
+  // features is a string array, no parsing needed from db.
+  return categories as Category[];
 }
 
 export async function fetchAllUsers(): Promise<User[]> {
@@ -31,17 +33,20 @@ export async function fetchAllUsers(): Promise<User[]> {
 
 export async function fetchResults(): Promise<Result[]> {
     const results = await prisma.result.findMany();
-    return results.map(r => ({...r, answers: JSON.parse(r.answers as string)})) as Result[];
+    // No need to parse answers as it's now a JSON type
+    return results as Result[];
 }
 
 export async function fetchReports(): Promise<Report[]> {
     const reports = await prisma.report.findMany();
-    return reports.map(r => ({ ...r, chat: JSON.parse(r.chat as string) as ChatMessage[] })) as Report[];
+    // No need to parse chat as it's now a JSON type
+    return reports as Report[];
 }
 
 export async function fetchChatThreads(): Promise<ChatThread[]> {
     const threads = await prisma.chatThread.findMany();
-    return threads.map(t => ({...t, messages: JSON.parse(t.messages as string) as DirectMessage[]})) as ChatThread[];
+    // No need to parse messages as it's now a JSON type
+    return threads as ChatThread[];
 }
 
 export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingData[]> {
@@ -50,7 +55,8 @@ export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingDat
 
 export async function fetchSarthiBotConversations(): Promise<SarthiBotConversation[]> {
     const convos = await prisma.sarthiBotConversation.findMany();
-    return convos.map(c => ({...c, messages: JSON.parse(c.messages as string) as SarthiBotMessage[]})) as SarthiBotConversation[];
+    // No need to parse messages as it's now a JSON type
+    return convos as SarthiBotConversation[];
 }
 
 export async function fetchStudentFeedbacks(): Promise<Feedback[]> {
@@ -115,7 +121,8 @@ export async function upsertUser(data: Partial<User> & { id: string }) {
 }
 
 export async function upsertTest(test: Test) {
-    const testData = { ...test, id: test.id || undefined, questions: JSON.stringify(test.questions) };
+    // No need to stringify questions
+    const testData = { ...test, id: test.id || undefined };
     return serialize(await prisma.test.upsert({
         where: { id: test.id || 'new' },
         update: testData as any,
@@ -124,7 +131,8 @@ export async function upsertTest(test: Test) {
 }
 
 export async function upsertCategory(category: Category) {
-    const categoryData = { ...category, features: (category.features as any)?.join(','), id: category.id || undefined };
+    // No need to join features, it's a string array
+    const categoryData = { ...category, id: category.id || undefined };
      return serialize(await prisma.category.upsert({
         where: { id: category.id || 'new' },
         update: categoryData as any,
@@ -133,7 +141,8 @@ export async function upsertCategory(category: Category) {
 }
 
 export async function upsertResult(result: Result) {
-    const data = { ...result, answers: JSON.stringify(result.answers) };
+    // No need to stringify answers
+    const data = { ...result };
     return serialize(await prisma.result.upsert({
         where: { id: result.id || 'new' },
         update: data as any,
@@ -142,7 +151,8 @@ export async function upsertResult(result: Result) {
 }
 
 export async function upsertReport(report: Report) {
-    const data = { ...report, chat: JSON.stringify(report.chat) };
+    // No need to stringify chat
+    const data = { ...report };
     return serialize(await prisma.report.upsert({
         where: { id: report.id || 'new' },
         update: data as any,
@@ -151,7 +161,8 @@ export async function upsertReport(report: Report) {
 }
 
 export async function upsertChatThread(thread: ChatThread) {
-    const data = { ...thread, messages: JSON.stringify(thread.messages) };
+    // No need to stringify messages
+    const data = { ...thread };
     return serialize(await prisma.chatThread.upsert({
         where: { studentId: thread.studentId },
         update: data as any,
@@ -165,7 +176,8 @@ export async function saveSarthiBotTrainingData(data: SarthiBotTrainingData[]) {
 }
 
 export async function upsertSarthiBotConversation(conversation: SarthiBotConversation) {
-    const data = { ...conversation, messages: JSON.stringify(conversation.messages) };
+    // No need to stringify messages
+    const data = { ...conversation };
     return serialize(await prisma.sarthiBotConversation.upsert({
         where: { studentId: conversation.studentId },
         update: data as any,
@@ -199,7 +211,7 @@ export async function removeTest(testId: string) {
 
 export async function removeCategory(categoryId: string, deleteTests: boolean) {
     if (deleteTests) {
-        await prisma.test.updateMany({ where: { categoryId }, data: { categoryId: null } });
+        await prisma.test.deleteMany({ where: { categoryId } });
     }
     return await prisma.category.delete({ where: { id: categoryId } });
 }
