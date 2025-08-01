@@ -2,11 +2,11 @@
 'use server';
 
 import { PrismaClient } from '@prisma/client';
-import { withAccelerate } from '@prisma/extension-accelerate';
+// import { withAccelerate } from '@prisma/extension-accelerate'; // Temporarily removed for db push
 import bcrypt from 'bcryptjs';
 import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainingData, SarthiBotConversation, Feedback, SiteSettings, Question, DirectMessage, ChatMessage, SarthiBotMessage } from '@/lib/types';
 
-const prisma = new PrismaClient().$extends(withAccelerate());
+const prisma = new PrismaClient(); // Temporarily removed .$extends(withAccelerate());
 
 // Helper to handle JSON conversion for Prisma - no longer needed for fields that are now JSON type
 function serialize<T>(data: T): T {
@@ -18,7 +18,7 @@ function serialize<T>(data: T): T {
 // Fetch Actions
 export async function fetchTests(): Promise<Test[]> {
   const tests = await prisma.test.findMany({
-    cacheStrategy: { ttl: 60 },
+    // cacheStrategy: { ttl: 60 },
   });
   // No need to parse questions as it's now a JSON type
   return tests as Test[];
@@ -26,7 +26,7 @@ export async function fetchTests(): Promise<Test[]> {
 
 export async function fetchCategories(): Promise<Category[]> {
   const categories = await prisma.category.findMany({
-    cacheStrategy: { ttl: 60 },
+    // cacheStrategy: { ttl: 60 },
   });
   // features is now a json type, no parsing needed from db.
   return categories as Category[];
@@ -34,13 +34,13 @@ export async function fetchCategories(): Promise<Category[]> {
 
 export async function fetchAllUsers(): Promise<User[]> {
     return serialize(await prisma.user.findMany({
-        cacheStrategy: { ttl: 60 },
+        // cacheStrategy: { ttl: 60 },
     }));
 }
 
 export async function fetchResults(): Promise<Result[]> {
     const results = await prisma.result.findMany({
-        cacheStrategy: { ttl: 60 },
+        // cacheStrategy: { ttl: 60 },
     });
     // No need to parse answers as it's now a JSON type
     return results as Result[];
@@ -48,7 +48,7 @@ export async function fetchResults(): Promise<Result[]> {
 
 export async function fetchReports(): Promise<Report[]> {
     const reports = await prisma.report.findMany({
-        cacheStrategy: { ttl: 60 },
+        // cacheStrategy: { ttl: 60 },
     });
     // No need to parse chat as it's now a JSON type
     return reports as Report[];
@@ -56,7 +56,7 @@ export async function fetchReports(): Promise<Report[]> {
 
 export async function fetchChatThreads(): Promise<ChatThread[]> {
     const threads = await prisma.chatThread.findMany({
-        cacheStrategy: { ttl: 60 },
+        // cacheStrategy: { ttl: 60 },
     });
     // No need to parse messages as it's now a JSON type
     return threads as ChatThread[];
@@ -64,13 +64,13 @@ export async function fetchChatThreads(): Promise<ChatThread[]> {
 
 export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingData[]> {
     return serialize(await prisma.sarthiBotTrainingData.findMany({
-        cacheStrategy: { ttl: 60 },
+        // cacheStrategy: { ttl: 60 },
     }));
 }
 
 export async function fetchSarthiBotConversations(): Promise<SarthiBotConversation[]> {
     const convos = await prisma.sarthiBotConversation.findMany({
-        cacheStrategy: { ttl: 60 },
+        // cacheStrategy: { ttl: 60 },
     });
     // No need to parse messages as it's now a JSON type
     return convos as SarthiBotConversation[];
@@ -78,14 +78,14 @@ export async function fetchSarthiBotConversations(): Promise<SarthiBotConversati
 
 export async function fetchStudentFeedbacks(): Promise<Feedback[]> {
     return serialize(await prisma.feedback.findMany({
-        cacheStrategy: { ttl: 60 },
+        // cacheStrategy: { ttl: 60 },
     }));
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettings | null> {
     return serialize(await prisma.siteSettings.findUnique({ 
         where: { id: 'default' },
-        cacheStrategy: { ttl: 60 },
+        // cacheStrategy: { ttl: 60 },
     }));
 }
 
