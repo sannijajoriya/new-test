@@ -1,11 +1,9 @@
 
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainingData, SarthiBotConversation, Feedback, SiteSettings, Question, DirectMessage, ChatMessage, SarthiBotMessage } from '@/lib/types';
-
-const prisma = new PrismaClient();
 
 // Helper to handle JSON conversion for Prisma - no longer needed for fields that are now JSON type
 function serialize<T>(data: T): T {
@@ -219,4 +217,3 @@ export async function removeSarthiBotConversation(conversationId: string) {
     // ID is studentId in this case
     return await prisma.sarthiBotConversation.delete({ where: { studentId: conversationId } });
 }
-
