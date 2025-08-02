@@ -37,9 +37,11 @@ const nextConfig: NextConfig = {
     // This is to fix a build warning from genkit about a missing optional dependency.
     if (isServer) {
         config.externals.push('@opentelemetry/exporter-jaeger');
+        config.externals.push('@genkit-ai/firebase'); // Fix for build error
     }
     return config;
   },
 };
 
 export default nextConfig;
+
