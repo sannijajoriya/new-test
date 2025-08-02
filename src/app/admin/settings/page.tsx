@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { useSiteSettings, useSarthiBotTrainingData, useSarthiBotConversations, useData, useUser } from '@/hooks/use-data';
+import { useSiteSettings, useSarthiBotTrainingData, useSarthiBotConversations, useAllUsers, useUser } from '@/hooks/use-data';
 import { ImageUploader } from '@/components/image-uploader';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -37,7 +37,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 function AdminProfileManager() {
     const user = useUser();
-    const { updateUser } = useData();
+    const { updateUser } = useAllUsers();
     const { toast } = useToast();
 
     const form = useForm<ProfileFormData>({
@@ -352,7 +352,7 @@ function SarthiBotManager() {
                         <Table>
                             <TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Last Message</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
                             <TableBody>
-                                {conversations?.sort((a,b) => b.lastMessageAt - a.lastMessageAt).map(convo => (
+                                {conversations?.sort((a,b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()).map(convo => (
                                     <TableRow key={convo.studentId}>
                                         <TableCell>{convo.studentName}</TableCell>
                                         <TableCell>{new Date(convo.lastMessageAt).toLocaleString()}</TableCell>
@@ -600,33 +600,35 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your site, bot, and profile settings.</p>
       </div>
 
-      <Tabs defaultValue="profile">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-6">
-            <TabsTrigger value="profile"><Settings /> Admin Profile</TabsTrigger>
-            <TabsTrigger value="site"><ImagePlus /> Site Logo</TabsTrigger>
-            <TabsTrigger value="sarthi-bot"><BrainCircuit /> Sarthi Bot</TabsTrigger>
-            <TabsTrigger value="chat"><MessageSquare /> Chat Settings</TabsTrigger>
-            <TabsTrigger value="news-banner"><Newspaper /> News Banner</TabsTrigger>
-            <TabsTrigger value="homepage-banner"><LayoutTemplate /> Homepage Banner</TabsTrigger>
+      <Tabs defaultValue="profile" className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <TabsList className="md:col-span-3 lg:col-span-2 flex-col h-auto items-stretch bg-transparent p-0 space-y-1">
+            <TabsTrigger value="profile" className="justify-start gap-2"><Settings /> Admin Profile</TabsTrigger>
+            <TabsTrigger value="site" className="justify-start gap-2"><ImagePlus /> Site Logo</TabsTrigger>
+            <TabsTrigger value="sarthi-bot" className="justify-start gap-2"><BrainCircuit /> Sarthi Bot</TabsTrigger>
+            <TabsTrigger value="chat" className="justify-start gap-2"><MessageSquare /> Chat Settings</TabsTrigger>
+            <TabsTrigger value="news-banner" className="justify-start gap-2"><Newspaper /> News Banner</TabsTrigger>
+            <TabsTrigger value="homepage-banner" className="justify-start gap-2"><LayoutTemplate /> Homepage Banner</TabsTrigger>
         </TabsList>
-        <TabsContent value="profile" className="pt-6">
-             <AdminProfileManager />
-        </TabsContent>
-         <TabsContent value="site" className="pt-6">
-            <SiteSettingsManager />
-        </TabsContent>
-        <TabsContent value="sarthi-bot" className="pt-6">
-            <SarthiBotManager />
-        </TabsContent>
-         <TabsContent value="chat" className="pt-6">
-            <ChatSettingsManager />
-        </TabsContent>
-         <TabsContent value="news-banner" className="pt-6">
-            <NewsBannerManager />
-        </TabsContent>
-        <TabsContent value="homepage-banner" className="pt-6">
-            <HomepageBannerManager />
-        </TabsContent>
+        <div className="md:col-span-9 lg:col-span-10">
+            <TabsContent value="profile">
+                <AdminProfileManager />
+            </TabsContent>
+            <TabsContent value="site">
+                <SiteSettingsManager />
+            </TabsContent>
+            <TabsContent value="sarthi-bot">
+                <SarthiBotManager />
+            </TabsContent>
+            <TabsContent value="chat">
+                <ChatSettingsManager />
+            </TabsContent>
+            <TabsContent value="news-banner">
+                <NewsBannerManager />
+            </TabsContent>
+            <TabsContent value="homepage-banner">
+                <HomepageBannerManager />
+            </TabsContent>
+        </div>
       </Tabs>
     </div>
   );

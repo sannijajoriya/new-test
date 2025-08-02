@@ -1,6 +1,7 @@
 
 'use client'
 
+import React from 'react';
 import { AuthGuard } from '@/components/auth-guard';
 import { AdminSidebar } from '@/components/admin-sidebar';
 import { useUser } from '@/hooks/use-data';

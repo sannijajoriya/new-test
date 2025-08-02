@@ -49,7 +49,7 @@ function DirectMessageDialog({ student, isOpen, onClose }: { student: User | nul
             const newMessage: DirectMessage = {
                 sender: 'admin',
                 text: data.message,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
 
             let threadToUpdate: ChatThread;

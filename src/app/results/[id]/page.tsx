@@ -51,7 +51,7 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onSubmit 
             const chatMessage: ChatMessage = {
                 sender: 'student',
                 message: `Reason: ${data.reason}\nRemarks: ${data.remarks || 'N/A'}`,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
 
             const newReport: Report = {
@@ -66,7 +66,7 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onSubmit 
                 remarks: data.remarks || '',
                 status: 'pending',
                 chat: [chatMessage],
-                createdAt: Date.now(),
+                createdAt: new Date(),
             };
 
             onSubmit(newReport);

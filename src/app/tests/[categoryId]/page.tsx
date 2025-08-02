@@ -18,25 +18,23 @@ function TestList({ categoryId }: { categoryId: string }) {
     const user = useUser();
     const { data: tests, isLoading: isLoadingTests } = useTests();
     const { data: categories, isLoading: isLoadingCategories } = useCategories();
-    const { data: userResults, isLoading: isLoadingResults } = useResults();
-    
-    const [filteredTests, setFilteredTests] = useState<Test[]>([]);
+    const { data: results, isLoading: isLoadingResults } = useResults();
     
     const isLoading = isLoadingTests || isLoadingCategories || isLoadingResults;
 
     const userAttemptedResults = useMemo(() => {
-        if (!user || !userResults) return [];
-        return userResults.filter(r => r.userId === user.id);
-    }, [user, userResults]);
+        if (!user || !results) return [];
+        return results.filter(r => r.userId === user.id);
+    }, [user, results]);
 
-    useEffect(() => {
-        if (isLoading || !tests) return;
+    const filteredTests = useMemo(() => {
+        if (isLoading || !tests) return [];
         
         const testsInCategory = categoryId === 'uncategorized'
-                ? tests.filter(t => !t.categoryId || !categories?.find(c => c.id === t.categoryId))
-                : tests.filter(t => t.categoryId === categoryId);
+                ? (tests || []).filter(t => !t.categoryId || !(categories || []).find(c => c.id === t.categoryId))
+                : (tests || []).filter(t => t.categoryId === categoryId);
         
-        setFilteredTests(testsInCategory);
+        return testsInCategory;
         
     }, [categoryId, tests, categories, isLoading]);
 

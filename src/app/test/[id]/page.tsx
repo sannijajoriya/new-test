@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { type Test, type Question as QuestionType, type Result, type Report, type User, type ChatMessage } from '@/lib/types';
 import { AuthGuard } from '@/components/auth-guard';
@@ -26,6 +26,7 @@ import { Flag, Library, Clock, ListChecks, Hash, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTests, useCategories, useResults, useReports, useUser } from '@/hooks/use-data';
+import { Badge } from '@/components/ui/badge';
 
 const reportSchema = z.object({
   reason: z.string().min(1, "Please select a reason."),
@@ -97,7 +98,7 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onUpdateR
             const chatMessage: ChatMessage = {
                 sender: 'student',
                 message: `Reason: ${data.reason}\nRemarks: ${data.remarks || 'N/A'}`,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
 
             const newReport: Report = {
@@ -112,7 +113,7 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onUpdateR
                 remarks: data.remarks || '',
                 status: 'pending',
                 chat: [chatMessage],
-                createdAt: Date.now(),
+                createdAt: new Date(),
             };
 
             onUpdateReport(newReport);
@@ -466,7 +467,7 @@ function TestComponent() {
   
   const { data: tests, isLoading: isLoadingTests } = useTests();
   const { data: categories, isLoading: isLoadingCategories } = useCategories();
-  const { data: results, updateItem: updateResult, isLoading: isLoadingResults } = useResults();
+  const { data: results, updateResult, isLoading: isLoadingResults } = useResults();
 
   const [test, setTest] = useState<Test | null>(null);
   const [categoryName, setCategoryName] = useState('Uncategorized');
@@ -509,7 +510,7 @@ function TestComponent() {
   }, [testId, router, user, tests, categories, results, isLoading]);
 
   const handleSubmit = useCallback(() => {
-    if (!test || !user || !startTime) return;
+    if (!test || !user || !startTime || !updateResult) return;
 
     const timeTaken = Math.round((Date.now() - startTime) / 1000);
     
@@ -545,7 +546,7 @@ function TestComponent() {
       unansweredCount,
       timeTaken,
       answers,
-      submittedAt: Date.now(),
+      submittedAt: new Date(),
     };
     
     updateResult(newResult);

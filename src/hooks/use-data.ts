@@ -1,50 +1,30 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainingData, SarthiBotConversation, Feedback, SiteSettings } from '@/lib/types';
-import { useLoading } from './use-loading';
 import { useAuth } from './use-auth';
-import { 
-    fetchTests, fetchCategories, fetchAllUsers, fetchResults, fetchReports, 
-    fetchChatThreads, fetchSarthiBotTrainingData, fetchSarthiBotConversations, 
-    fetchStudentFeedbacks, fetchSiteSettings, upsertUser, upsertTest,
-    removeTest, upsertCategory, removeCategory, upsertResult, upsertReport,
-    upsertChatThread, removeChatThread, saveSarthiBotTrainingData,
-    upsertSarthiBotConversation, removeSarthiBotConversation,
-    saveFeedbacks, upsertSiteSettings, removeStudent
+import useSWR from 'swr';
+import {
+    fetchTests, fetchCategories, fetchAllUsers, fetchResults, fetchReports,
+    fetchChatThreads, fetchSarthiBotTrainingData, fetchSarthiBotConversations,
+    fetchStudentFeedbacks, fetchSiteSettings
 } from '@/actions/data-actions';
+import { upsertTest, removeTest } from '@/actions/data-actions';
+import { upsertCategory, removeCategory } from '@/actions/data-actions';
+import { upsertUser, removeStudent } from '@/actions/data-actions';
+import { upsertResult } from '@/actions/data-actions';
+import { upsertReport } from '@/actions/data-actions';
+import { upsertChatThread, removeChatThread } from '@/actions/data-actions';
+import { saveSarthiBotTrainingData, upsertSarthiBotConversation, removeSarthiBotConversation } from '@/actions/data-actions';
+import { saveFeedbacks } from '@/actions/data-actions';
+import { upsertSiteSettings } from '@/actions/data-actions';
+
 
 interface DataContextType {
     user: User | null;
-    tests: Test[] | null;
-    categories: Category[] | null;
-    allUsers: User[] | null;
-    results: Result[] | null;
-    reports: Report[] | null;
-    chatThreads: ChatThread[] | null;
-    sarthiBotTrainingData: SarthiBotTrainingData[] | null;
-    sarthiBotConversations: SarthiBotConversation[] | null;
-    studentFeedbacks: Feedback[] | null;
-    siteSettings: SiteSettings | null;
     isLoading: boolean;
-    updateUser: (userId: string, data: Partial<User>) => Promise<void>;
-    updateTest: (test: Test) => Promise<void>;
-    deleteTest: (testId: string) => Promise<void>;
-    updateCategory: (category: Category) => Promise<void>;
-    deleteCategory: (categoryId: string, deleteTests: boolean) => Promise<void>;
-    updateResult: (result: Result) => Promise<void>;
-    updateReport: (report: Report) => Promise<void>;
-    updateChatThread: (thread: ChatThread) => Promise<void>;
-    deleteChatThread: (threadId: string) => Promise<void>;
-    updateSarthiBotTrainingData: (data: SarthiBotTrainingData[]) => Promise<void>;
-    updateSarthiBotConversation: (conversation: SarthiBotConversation) => Promise<void>;
-    deleteSarthiBotConversation: (conversationId: string) => Promise<void>;
-    updateFeedbacks: (feedbacks: Feedback[]) => Promise<void>;
-    updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
-    deleteStudent: (studentId: string) => Promise<void>;
 }
-
 const DataContext = createContext<DataContextType | null>(null);
 
 const defaultSiteSettings: SiteSettings = {
@@ -52,245 +32,231 @@ const defaultSiteSettings: SiteSettings = {
     botIntroMessage: 'नमस्ते! मैं उड़ान सारथी हूँ। मैं आपकी पढ़ाई में कैसे मदद कर सकता हूँ?',
     isBotEnabled: true, isNewsBannerEnabled: false, newsBannerImageUrl: '', newsBannerTitle: '',
     newsBannerLink: '', newsBannerDisplayRule: 'session',
-    heroBannerText: 'Your Journey to Success Starts Here.\\nGuided by AI. Designed for Results.',
+    heroBannerText: 'Your Journey to Success Starts Here.\nGuided by AI. Designed for Results.',
     isHeroBannerTextEnabled: true, heroBannerImageUrl: 'https://placehold.co/1200x480.png',
     heroBannerOverlayOpacity: 0.3, adminChatAutoReply: "Thanks for reaching out! An admin will get back to you as soon as possible.",
 };
 
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
-    const { authUser } = useAuth();
-    const [user, setUser] = useState<User | null>(null);
-    const [tests, setTests] = useState<Test[] | null>(null);
-    const [categories, setCategories] = useState<Category[] | null>(null);
-    const [allUsers, setAllUsers] = useState<User[] | null>(null);
-    const [results, setResults] = useState<Result[] | null>(null);
-    const [reports, setReports] = useState<Report[] | null>(null);
-    const [chatThreads, setChatThreads] = useState<ChatThread[] | null>(null);
-    const [sarthiBotTrainingData, setSarthiBotTrainingData] = useState<SarthiBotTrainingData[] | null>(null);
-    const [sarthiBotConversations, setSarthiBotConversations] = useState<SarthiBotConversation[] | null>(null);
-    const [studentFeedbacks, setStudentFeedbacks] = useState<Feedback[] | null>(null);
-    const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+    const { authUser, loading: authLoading } = useAuth();
+    const { data: allUsers, isLoading: usersLoading } = useSWR(authUser ? 'allUsers' : null, fetchAllUsers);
     
-    const [isLoading, setIsLoading] = useState(true);
-    const { setLoading: setAppLoading } = useLoading();
+    const user = useMemo(() => {
+        if (!authUser || !allUsers) return null;
+        return allUsers.find(u => u.id === authUser.id) || null;
+    }, [authUser, allUsers]);
 
-    const loadAllData = useCallback(async (currentUser: User) => {
-        setIsLoading(true);
-        setAppLoading(true);
+    const isLoading = authLoading || usersLoading;
 
-        try {
-            const [
-                testsRes, categoriesRes, resultsRes, reportsRes, chatThreadsRes,
-                sarthiBotTrainingDataRes, sarthiBotConversationsRes, studentFeedbacksRes,
-                siteSettingsRes, allUsersRes
-            ] = await Promise.all([
-                fetchTests(),
-                fetchCategories(),
-                fetchResults(),
-                fetchReports(),
-                fetchChatThreads(),
-                fetchSarthiBotTrainingData(),
-                fetchSarthiBotConversations(),
-                fetchStudentFeedbacks(),
-                fetchSiteSettings(),
-                currentUser.role === 'admin' ? fetchAllUsers() : Promise.resolve([currentUser]),
-            ]);
-
-            setTests(testsRes as Test[] || []);
-            setCategories(categoriesRes as Category[] || []);
-            setResults(resultsRes as Result[] || []);
-            setReports(reportsRes as Report[] || []);
-            setChatThreads(chatThreadsRes as ChatThread[] || []);
-            setSarthiBotTrainingData(sarthiBotTrainingDataRes as SarthiBotTrainingData[] || []);
-            setSarthiBotConversations(sarthiBotConversationsRes as SarthiBotConversation[] || []);
-            setStudentFeedbacks(studentFeedbacksRes as Feedback[] || []);
-            const settingsData = siteSettingsRes as SiteSettings;
-            setSiteSettings(settingsData ? { ...defaultSiteSettings, ...settingsData } : defaultSiteSettings);
-            
-            setAllUsers(allUsersRes as User[] || []);
-
-        } catch (error) {
-            console.error("Error fetching data:", error);
-        } finally {
-            setIsLoading(false);
-            setAppLoading(false);
-        }
-    }, [setAppLoading]);
-
-    useEffect(() => {
-        if (authUser) {
-            const userInAllUsers = allUsers?.find(u => u.id === authUser.id);
-            if (userInAllUsers) {
-                setUser(userInAllUsers);
-            } else {
-                // Fetch all users to find the current user if not already loaded
-                fetchAllUsers().then(users => {
-                    const foundUser = (users as User[]).find(u => u.id === authUser.id);
-                    setAllUsers(users as User[]);
-                    if (foundUser) {
-                        setUser(foundUser);
-                        loadAllData(foundUser);
-                    }
-                });
-            }
-        } else {
-            setUser(null);
-        }
-    }, [authUser, allUsers, loadAllData]);
-
-    const updateUser = useCallback(async (userId: string, data: Partial<User>) => {
-        await upsertUser({ ...data, id: userId });
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-
-    const updateTest = useCallback(async (test: Test) => {
-        await upsertTest(test);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-
-    const deleteTest = useCallback(async (testId: string) => {
-        await removeTest(testId);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-
-    const updateCategory = useCallback(async (category: Category) => {
-        await upsertCategory(category);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-    
-    const deleteCategory = useCallback(async (categoryId: string, deleteTests: boolean) => {
-        await removeCategory(categoryId, deleteTests);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-    
-    const deleteStudent = useCallback(async (studentId: string) => {
-        await removeStudent(studentId);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-
-    const updateResult = useCallback(async (result: Result) => {
-        await upsertResult(result);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-
-    const updateReport = useCallback(async (report: Report) => {
-        await upsertReport(report);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-
-    const updateChatThread = useCallback(async (thread: ChatThread) => {
-        await upsertChatThread(thread);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-
-    const deleteChatThread = useCallback(async (threadId: string) => {
-        await removeChatThread(threadId);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-
-    const updateSarthiBotConversation = useCallback(async (conversation: SarthiBotConversation) => {
-        await upsertSarthiBotConversation(conversation);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-    
-    const deleteSarthiBotConversation = useCallback(async (conversationId: string) => {
-        await removeSarthiBotConversation(conversationId);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-    
-    const updateSarthiBotTrainingData = useCallback(async (data: SarthiBotTrainingData[]) => {
-        await saveSarthiBotTrainingData(data);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-    
-    const updateFeedbacks = useCallback(async (feedbacks: Feedback[]) => {
-        await saveFeedbacks(feedbacks);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-
-    const updateSiteSettings = useCallback(async (settings: Partial<SiteSettings>) => {
-        await upsertSiteSettings(settings);
-        await loadAllData(user!);
-    }, [loadAllData, user]);
-    
     const value = useMemo(() => ({
-        user, tests, categories, allUsers, results, reports,
-        chatThreads, sarthiBotTrainingData, sarthiBotConversations,
-        studentFeedbacks, siteSettings, isLoading,
-        updateUser, updateTest, deleteTest, updateCategory, deleteCategory,
-        updateResult, updateReport, updateChatThread, deleteChatThread,
-        updateSarthiBotTrainingData, updateSarthiBotConversation,
-        deleteSarthiBotConversation, updateFeedbacks, updateSiteSettings, deleteStudent,
-    }), [
-        user, tests, categories, allUsers, results, reports,
-        chatThreads, sarthiBotTrainingData, sarthiBotConversations,
-        studentFeedbacks, siteSettings, isLoading,
-        updateUser, updateTest, deleteTest, updateCategory, deleteCategory,
-        updateResult, updateReport, updateChatThread, deleteChatThread,
-        updateSarthiBotTrainingData, updateSarthiBotConversation,
-        deleteSarthiBotConversation, updateFeedbacks, updateSiteSettings, deleteStudent
-    ]);
+        user,
+        isLoading,
+    }), [user, isLoading]);
 
     return React.createElement(DataContext.Provider, { value }, children);
 };
 
+
+// Custom Hooks for each data type
 export const useData = () => {
     const context = useContext(DataContext);
-    if (context === null) {
-        throw new Error('useData must be used within a DataProvider');
-    }
+    if (!context) throw new Error('useData must be used within a DataProvider.');
     return context;
 };
 
 export const useUser = () => useData().user;
+
 export const useTests = () => {
-    const { tests, isLoading, updateTest, deleteTest } = useData();
-    return { data: tests, isLoading, updateItem: updateTest, deleteItem: deleteTest };
-}
+    const { data, error, isLoading, mutate } = useSWR<Test[]>('tests', fetchTests);
+    return { 
+        data, 
+        isLoading, 
+        error, 
+        mutate, 
+        updateTest: async (test: Test) => {
+            const optimisticData = data?.map(t => t.id === test.id ? test : t) || [test];
+             if (!data?.some(t => t.id === test.id)) {
+                optimisticData.push(test);
+            }
+            await mutate(upsertTest(test), { optimisticData, revalidate: false });
+        },
+        deleteTest: async (id: string) => {
+            const optimisticData = data?.filter(t => t.id !== id) || [];
+            await mutate(removeTest(id), { optimisticData, revalidate: false });
+        }
+    };
+};
+
 export const useCategories = () => {
-    const { categories, isLoading, updateCategory, deleteCategory } = useData();
-    return { data: categories, isLoading, updateItem: updateCategory, deleteCategory };
-}
+    const { data, error, isLoading, mutate } = useSWR<Category[]>('categories', fetchCategories);
+    return {
+        data,
+        isLoading,
+        error,
+        mutate,
+        updateCategory: async (category: Category) => {
+            const optimisticData = data?.map(c => c.id === category.id ? category : c) || [category];
+            if (!data?.some(c => c.id === category.id)) {
+                optimisticData.push(category);
+            }
+            await mutate(upsertCategory(category), { optimisticData, revalidate: false });
+        },
+        deleteCategory: async (id: string, deleteTests: boolean) => {
+             const optimisticData = data?.filter(c => c.id !== id) || [];
+             await mutate(removeCategory(id, deleteTests), { optimisticData, revalidate: false });
+        }
+    };
+};
+
 export const useAllUsers = () => {
-    const { allUsers, isLoading, updateUser } = useData();
-    return { allUsers: allUsers || [], isLoading, updateUser };
-}
+    const { data, isLoading, mutate } = useSWR<User[]>('allUsers', fetchAllUsers);
+     return {
+        allUsers: data,
+        isLoading,
+        updateUser: async (id: string, userData: Partial<User>) => {
+            const optimisticData = data?.map(u => u.id === id ? { ...u, ...userData } : u) || [];
+            await mutate(upsertUser({ id, ...userData }), { optimisticData, revalidate: false });
+        },
+        deleteStudent: async (id: string) => {
+            const optimisticData = data?.filter(u => u.id !== id);
+            await mutate(removeStudent(id), { optimisticData, revalidate: false });
+        },
+        mutate
+    };
+};
+
 export const useStudents = () => {
-    const { allUsers, isLoading, deleteStudent } = useData();
-    const students = useMemo(() => allUsers?.filter(u => u.role === 'student'), [allUsers]);
-    return { students, deleteStudent, isLoading };
-}
+    const { data, isLoading, mutate } = useSWR('students', async () => {
+        const users = await fetchAllUsers();
+        return users.filter(u => u.role === 'student');
+    });
+    return { 
+        students: data, 
+        isLoading,
+        deleteStudent: async (id: string) => {
+            const optimisticData = data?.filter(u => u.id !== id);
+            await mutate(removeStudent(id), { optimisticData, revalidate: false });
+        }
+    };
+};
+
 export const useAdminUser = () => {
-    const { allUsers, isLoading } = useData();
-    const adminUser = useMemo(() => allUsers?.find(u => u.role === 'admin'), [allUsers]);
-    return { adminUser, isLoading };
-}
+    const { data, isLoading } = useSWR('adminUser', async () => {
+        const users = await fetchAllUsers();
+        return users.find(u => u.role === 'admin');
+    });
+    return { adminUser: data, isLoading };
+};
+
 export const useResults = () => {
-    const { results, isLoading, updateResult } = useData();
-    return { data: results, isLoading, updateItem: updateResult };
-}
+    const { data, error, isLoading, mutate } = useSWR<Result[]>('results', fetchResults);
+    return { 
+        data, 
+        isLoading, 
+        error, 
+        updateResult: async (result: Result) => {
+            const optimisticData = data?.map(r => r.id === result.id ? result : r) || [result];
+             if (!data?.some(r => r.id === result.id)) {
+                optimisticData.push(result);
+            }
+            await mutate(upsertResult(result), { optimisticData, revalidate: false });
+        }
+    };
+};
+
 export const useReports = () => {
-    const { reports, isLoading, updateReport } = useData();
-    return { data: reports, updateItem: updateReport, isLoading };
-}
+    const { data, error, isLoading, mutate } = useSWR<Report[]>('reports', fetchReports);
+    return { 
+        data, 
+        isLoading, 
+        error, 
+        updateItem: async (report: Report) => {
+             const optimisticData = data?.map(r => r.id === report.id ? report : r) || [report];
+             if (!data?.some(r => r.id === report.id)) {
+                optimisticData.push(report);
+            }
+            await mutate(upsertReport(report), { optimisticData, revalidate: false });
+        }
+    };
+};
+
 export const useChatThreads = () => {
-    const { chatThreads, isLoading, updateChatThread, deleteChatThread } = useData();
-    return { data: chatThreads, isLoading, updateItem: updateChatThread, deleteItem: deleteChatThread };
-}
+    const { data, error, isLoading, mutate } = useSWR<ChatThread[]>('chatThreads', fetchChatThreads);
+    return {
+        data,
+        isLoading,
+        error,
+        updateItem: async (thread: ChatThread) => {
+            const optimisticData = data?.map(t => t.id === thread.id ? thread : t) || [thread];
+             if (!data?.some(t => t.id === thread.id)) {
+                optimisticData.push(thread);
+            }
+            await mutate(upsertChatThread(thread), { optimisticData, revalidate: false });
+        },
+        deleteItem: async (id: string) => {
+            const optimisticData = data?.filter(t => t.id !== id);
+            await mutate(removeChatThread(id), { optimisticData, revalidate: false });
+        }
+    };
+};
+
 export const useSarthiBotTrainingData = () => {
-    const { sarthiBotTrainingData, isLoading, updateSarthiBotTrainingData } = useData();
-    return { trainingData: sarthiBotTrainingData, updateSarthiBotTrainingData, isLoading };
-}
+    const { data, error, isLoading, mutate } = useSWR<SarthiBotTrainingData[]>('sarthiBotTrainingData', fetchSarthiBotTrainingData);
+    return { 
+        trainingData: data, 
+        isLoading, 
+        error, 
+        updateSarthiBotTrainingData: async (trainingData: SarthiBotTrainingData[]) => {
+            await mutate(saveSarthiBotTrainingData(trainingData), { optimisticData: trainingData, revalidate: false });
+        }
+    };
+};
+
 export const useSarthiBotConversations = () => {
-    const { sarthiBotConversations, isLoading, updateSarthiBotConversation, deleteSarthiBotConversation } = useData();
-    return { conversations: sarthiBotConversations, updateSarthiBotConversation, deleteSarthiBotConversation, isLoading };
-}
+    const { data, error, isLoading, mutate } = useSWR<SarthiBotConversation[]>('sarthiBotConversations', fetchSarthiBotConversations);
+     return {
+        conversations: data,
+        isLoading,
+        error,
+        updateSarthiBotConversation: async (conversation: SarthiBotConversation) => {
+            const optimisticData = data?.map(c => c.id === conversation.id ? conversation : c) || [conversation];
+             if (!data?.some(c => c.id === conversation.id)) {
+                optimisticData.push(conversation);
+            }
+            await mutate(upsertSarthiBotConversation(conversation), { optimisticData, revalidate: false });
+        },
+        deleteSarthiBotConversation: async (id: string) => {
+            const optimisticData = data?.filter(c => c.id !== id);
+            await mutate(removeSarthiBotConversation(id), { optimisticData, revalidate: false });
+        }
+    };
+};
+
 export const useFeedbacks = () => {
-    const { studentFeedbacks, isLoading, updateFeedbacks } = useData();
-    return { data: studentFeedbacks, updateFeedbacks, isLoading };
-}
+    const { data, error, isLoading, mutate } = useSWR<Feedback[]>('feedbacks', fetchStudentFeedbacks);
+    return { 
+        data, 
+        isLoading, 
+        error,
+        updateFeedbacks: async (feedbacks: Feedback[]) => {
+            await mutate(saveFeedbacks(feedbacks), { optimisticData: feedbacks, revalidate: false });
+        }
+    };
+};
+
 export const useSiteSettings = () => {
-    const { siteSettings, isLoading, updateSiteSettings } = useData();
-    return { settings: siteSettings, updateSettings: updateSiteSettings, isLoading };
-}
+    const { data, error, isLoading, mutate } = useSWR<SiteSettings | null>('siteSettings', fetchSiteSettings, {
+        fallbackData: defaultSiteSettings
+    });
+    
+    const settings = data ? { ...defaultSiteSettings, ...data } : defaultSiteSettings;
+
+    const updateSettings = async (newSettings: Partial<SiteSettings>) => {
+        const optimisticData = { ...settings, ...newSettings };
+        const options = { optimisticData, revalidate: false };
+        await mutate(upsertSiteSettings(newSettings), options as any);
+    };
+
+    return { settings, isLoading, error, updateSettings };
+};

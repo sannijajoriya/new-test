@@ -2,11 +2,10 @@
 'use server';
 
 import { PrismaClient } from '@prisma/client';
-// import { withAccelerate } from '@prisma/extension-accelerate'; // Temporarily removed for db push
 import bcrypt from 'bcryptjs';
 import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainingData, SarthiBotConversation, Feedback, SiteSettings, Question, DirectMessage, ChatMessage, SarthiBotMessage } from '@/lib/types';
 
-const prisma = new PrismaClient(); // Temporarily removed .$extends(withAccelerate());
+const prisma = new PrismaClient();
 
 // Helper to handle JSON conversion for Prisma - no longer needed for fields that are now JSON type
 function serialize<T>(data: T): T {
@@ -17,75 +16,50 @@ function serialize<T>(data: T): T {
 
 // Fetch Actions
 export async function fetchTests(): Promise<Test[]> {
-  const tests = await prisma.test.findMany({
-    // cacheStrategy: { ttl: 60 },
-  });
-  // No need to parse questions as it's now a JSON type
+  const tests = await prisma.test.findMany();
   return tests as Test[];
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  const categories = await prisma.category.findMany({
-    // cacheStrategy: { ttl: 60 },
-  });
-  // features is now a json type, no parsing needed from db.
+  const categories = await prisma.category.findMany();
   return categories as Category[];
 }
 
 export async function fetchAllUsers(): Promise<User[]> {
-    return serialize(await prisma.user.findMany({
-        // cacheStrategy: { ttl: 60 },
-    }));
+    return serialize(await prisma.user.findMany());
 }
 
 export async function fetchResults(): Promise<Result[]> {
-    const results = await prisma.result.findMany({
-        // cacheStrategy: { ttl: 60 },
-    });
-    // No need to parse answers as it's now a JSON type
+    const results = await prisma.result.findMany();
     return results as Result[];
 }
 
 export async function fetchReports(): Promise<Report[]> {
-    const reports = await prisma.report.findMany({
-        // cacheStrategy: { ttl: 60 },
-    });
-    // No need to parse chat as it's now a JSON type
+    const reports = await prisma.report.findMany();
     return reports as Report[];
 }
 
 export async function fetchChatThreads(): Promise<ChatThread[]> {
-    const threads = await prisma.chatThread.findMany({
-        // cacheStrategy: { ttl: 60 },
-    });
-    // No need to parse messages as it's now a JSON type
+    const threads = await prisma.chatThread.findMany();
     return threads as ChatThread[];
 }
 
 export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingData[]> {
-    return serialize(await prisma.sarthiBotTrainingData.findMany({
-        // cacheStrategy: { ttl: 60 },
-    }));
+    return serialize(await prisma.sarthiBotTrainingData.findMany());
 }
 
 export async function fetchSarthiBotConversations(): Promise<SarthiBotConversation[]> {
-    const convos = await prisma.sarthiBotConversation.findMany({
-        // cacheStrategy: { ttl: 60 },
-    });
-    // No need to parse messages as it's now a JSON type
+    const convos = await prisma.sarthiBotConversation.findMany();
     return convos as SarthiBotConversation[];
 }
 
 export async function fetchStudentFeedbacks(): Promise<Feedback[]> {
-    return serialize(await prisma.feedback.findMany({
-        // cacheStrategy: { ttl: 60 },
-    }));
+    return serialize(await prisma.feedback.findMany());
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettings | null> {
     return serialize(await prisma.siteSettings.findUnique({ 
         where: { id: 'default' },
-        // cacheStrategy: { ttl: 60 },
     }));
 }
 
@@ -143,7 +117,6 @@ export async function upsertUser(data: Partial<User> & { id: string }) {
 }
 
 export async function upsertTest(test: Test) {
-    // No need to stringify questions
     const testData = { ...test, id: test.id || undefined };
     return serialize(await prisma.test.upsert({
         where: { id: test.id || 'new' },
@@ -153,7 +126,6 @@ export async function upsertTest(test: Test) {
 }
 
 export async function upsertCategory(category: Category) {
-    // No need to join features, it's a json
     const categoryData = { ...category, id: category.id || undefined };
      return serialize(await prisma.category.upsert({
         where: { id: category.id || 'new' },
@@ -163,7 +135,6 @@ export async function upsertCategory(category: Category) {
 }
 
 export async function upsertResult(result: Result) {
-    // No need to stringify answers
     const data = { ...result };
     return serialize(await prisma.result.upsert({
         where: { id: result.id || 'new' },
@@ -173,7 +144,6 @@ export async function upsertResult(result: Result) {
 }
 
 export async function upsertReport(report: Report) {
-    // No need to stringify chat
     const data = { ...report };
     return serialize(await prisma.report.upsert({
         where: { id: report.id || 'new' },
@@ -183,7 +153,6 @@ export async function upsertReport(report: Report) {
 }
 
 export async function upsertChatThread(thread: ChatThread) {
-    // No need to stringify messages
     const data = { ...thread };
     return serialize(await prisma.chatThread.upsert({
         where: { studentId: thread.studentId },
@@ -198,7 +167,6 @@ export async function saveSarthiBotTrainingData(data: SarthiBotTrainingData[]) {
 }
 
 export async function upsertSarthiBotConversation(conversation: SarthiBotConversation) {
-    // No need to stringify messages
     const data = { ...conversation };
     return serialize(await prisma.sarthiBotConversation.upsert({
         where: { studentId: conversation.studentId },
@@ -251,3 +219,4 @@ export async function removeSarthiBotConversation(conversationId: string) {
     // ID is studentId in this case
     return await prisma.sarthiBotConversation.delete({ where: { studentId: conversationId } });
 }
+

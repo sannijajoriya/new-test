@@ -49,13 +49,13 @@ export interface Result {
   unansweredCount: number;
   timeTaken: number; 
   answers: Record<string, string>; 
-  submittedAt: number; 
+  submittedAt: Date; 
 }
 
 export interface ChatMessage {
   sender: 'student' | 'admin';
   message: string;
-  timestamp: number;
+  timestamp: Date;
 }
 
 export interface Report {
@@ -70,13 +70,13 @@ export interface Report {
   remarks: string;
   status: 'pending' | 'responded';
   chat: ChatMessage[];
-  createdAt: number;
+  createdAt: Date;
 }
 
 export interface DirectMessage {
   sender: 'student' | 'admin';
   text: string;
-  timestamp: number;
+  timestamp: Date;
 }
 
 export interface ChatThread {
@@ -84,7 +84,7 @@ export interface ChatThread {
   studentId: string;
   studentName: string;
   messages: DirectMessage[];
-  lastMessageAt: number;
+  lastMessageAt: Date;
   seenByAdmin: boolean;
 }
 
@@ -95,7 +95,7 @@ export interface Feedback {
   city: string;
   message: string;
   photoUrl?: string;
-  createdAt: number;
+  createdAt: Date;
   status: 'pending' | 'approved' | 'rejected';
   order?: number;
 }
@@ -136,7 +136,7 @@ export interface SarthiBotConversation {
     studentId: string;
     studentName: string;
     messages: SarthiBotMessage[];
-    lastMessageAt: number;
+    lastMessageAt: Date;
 }
 
 export interface ChatHistory {

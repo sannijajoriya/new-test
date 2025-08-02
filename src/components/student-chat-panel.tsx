@@ -63,13 +63,13 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
             const newMessage: DirectMessage = {
                 sender: 'student',
                 text: data.message,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
 
             const autoReply: DirectMessage = {
                 sender: 'admin',
                 text: settings.adminChatAutoReply,
-                timestamp: Date.now() + 1000, // a bit later to feel more natural
+                timestamp: new Date(Date.now() + 1000), // a bit later to feel more natural
             };
 
             let updatedThread;

@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useEffect } from "react";
 import { User, Mail } from 'lucide-react';
 import { ImageUploader } from "@/components/image-uploader";
-import { useData, useUser } from "@/hooks/use-data";
+import { useAllUsers, useUser } from "@/hooks/use-data";
 
 const profileSchema = z.object({
   fullName: z.string().min(3, { message: "Full name must be at least 3 characters." }),
@@ -25,7 +25,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 function UpdateProfileForm() {
   const user = useUser();
-  const { updateUser } = useData();
+  const { updateUser } = useAllUsers();
   const { toast } = useToast();
 
   const form = useForm<ProfileFormData>({
@@ -137,5 +137,5 @@ function UpdateProfileForm() {
 
 
 export default function UpdateProfilePage() {
-    return <AuthGuard role="student"><UpdateProfileForm /></AuthGuard>
+    return <AuthGuard><UpdateProfileForm /></AuthGuard>
 }

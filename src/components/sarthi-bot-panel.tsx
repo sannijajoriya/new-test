@@ -75,7 +75,7 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
             studentId: user.id,
             studentName: user.fullName,
             messages: updatedMessages,
-            lastMessageAt: Date.now(),
+            lastMessageAt: new Date(),
         };
         updateSarthiBotConversation(newConversation);
     }, [user, updateSarthiBotConversation]);
@@ -212,7 +212,7 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
                     <CardHeader className="flex flex-row items-center justify-between p-3 border-b bg-card/80">
                         <div className="flex items-center gap-3">
                             <Avatar>
-                                {settings?.botAvatarUrl ? <AvatarImage src={settings.botAvatarUrl} alt="Bot Avatar" /> : <AvatarFallback><BrainCircuit /></AvatarFallback>}
+                                {settings?.botAvatarUrl ? <AvatarImage src={settings?.botAvatarUrl} alt="Bot Avatar" /> : <AvatarFallback><BrainCircuit /></AvatarFallback>}
                             </Avatar>
                             <div>
                                 <CardTitle className="text-base">{settings?.botName || "Sarthi Bot"}</CardTitle>

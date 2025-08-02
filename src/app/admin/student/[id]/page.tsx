@@ -30,7 +30,7 @@ function StudentProgressReport() {
 
     const studentResults = useMemo(() => {
         if (!results || !studentId) return [];
-        return results.filter(r => r.userId === studentId).sort((a,b) => b.submittedAt - a.submittedAt);
+        return results.filter(r => r.userId === studentId).sort((a,b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
     }, [results, studentId]);
 
     if (isLoading) {

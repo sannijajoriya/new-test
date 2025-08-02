@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm, useFieldArray, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,15 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Lightbulb, Edit, FilePenLine, FileUp, ClipboardPaste, Library, ArrowRight, Eye, ArrowLeft, FolderPlus, FolderSymlink } from 'lucide-react';
+import { PlusCircle, Trash2, Lightbulb, Edit, FilePenLine, FileUp, ClipboardPaste, Library, ArrowRight, Eye, ArrowLeft, FolderPlus, FolderSymlink, Wand2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { Test, Category } from '@/lib/types';
+import type { Test, Category, Question as QuestionType } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import * as pdfjs from 'pdfjs-dist';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,6 +27,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useLoading } from '@/hooks/use-loading';
 import { useTests, useCategories } from '@/hooks/use-data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { generateTestFromText } from '@/ai/flows/generate-test-flow';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 
 const optionSchema = z.object({ value: z.string().min(1, 'Option cannot be empty') });
@@ -575,10 +577,117 @@ function CategoryList({ categories, onSelect, onEdit, onDelete, onCreate, uncate
     );
 }
 
+function AITestGenerator({ form }: { form: UseFormReturn<TestFormData> }) {
+    const { toast } = useToast();
+    const { setLoading } = useLoading();
+    const [rawText, setRawText] = useState('');
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            toast({ title: 'Invalid File Type', description: 'Please upload a PDF file.', variant: 'destructive' });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += textContent.items.map(item => ('str' in item) ? item.str : '').join(' ');
+            }
+            setRawText(fullText);
+            toast({ title: 'PDF Processed', description: `Extracted ${pdf.numPages} pages of text. Review and generate.` });
+        } catch (error) {
+            console.error('PDF processing error:', error);
+            toast({ title: 'PDF Error', description: 'Could not process the PDF file.', variant: 'destructive' });
+        } finally {
+            setLoading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ''; // Allow re-uploading the same file
+            }
+        }
+    };
+
+    const handleGenerate = async () => {
+        if (!rawText.trim()) {
+            toast({ title: 'No Text', description: 'Please paste text or upload a PDF first.', variant: 'destructive' });
+            return;
+        }
+        setLoading(true);
+        try {
+            const result = await generateTestFromText({ text: rawText });
+            if (result.questions && result.questions.length > 0) {
+                const formattedQuestions = result.questions.map(q => ({
+                    text: q.text,
+                    imageUrl: '',
+                    // Ensure 5 options, with the 5th being "Not Attempted" if not present
+                    options: [...q.options.slice(0, 4), 'Not Attempted'].slice(0, 5).map(value => ({ value })),
+                    correctAnswer: q.correctAnswer,
+                }));
+                form.setValue('questions', formattedQuestions, { shouldValidate: true });
+                toast({ title: 'Test Generated!', description: `${result.questions.length} questions have been created. Review and save below.` });
+            } else {
+                 toast({ title: 'No Questions Found', description: 'The AI could not find any questions in the provided text.', variant: 'destructive' });
+            }
+        } catch (error) {
+            console.error('AI generation error:', error);
+            toast({ title: 'Generation Failed', description: 'An error occurred while generating the test.', variant: 'destructive' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>AI-Powered Test Generator</CardTitle>
+                <CardDescription>Paste text or upload a PDF, and let AI create the test questions for you.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="raw-text-input">Paste Text</Label>
+                        <Textarea
+                            id="raw-text-input"
+                            value={rawText}
+                            onChange={(e) => setRawText(e.target.value)}
+                            placeholder="Q1. What is the capital of India?..."
+                            rows={8}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="pdf-upload">Or Upload PDF</Label>
+                        <Input
+                            id="pdf-upload"
+                            type="file"
+                            accept="application/pdf"
+                            onChange={handleFileChange}
+                            ref={fileInputRef}
+                        />
+                        <p className="text-sm text-muted-foreground">The extracted text will appear in the box on the left.</p>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleGenerate}>
+                    <Wand2 className="mr-2 h-4 w-4" /> Generate Questions
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
 export default function ManageTestsPage() {
   const { toast } = useToast();
-  const { tests, updateTest, deleteTest, isLoading: isLoadingTests } = useTests();
-  const { categories, updateCategory, deleteCategory, isLoading: isLoadingCategories } = useCategories();
+  const { data: tests, isLoading: isLoadingTests, updateTest, deleteTest, mutate: mutateTests } = useTests();
+  const { data: categories, isLoading: isLoadingCategories, updateCategory, deleteCategory } = useCategories();
   
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
   const [testToEdit, setTestToEdit] = useState<Test | null>(null);
@@ -600,7 +709,7 @@ export default function ManageTestsPage() {
       marksPerCorrect: 1,
       negativeMarksPerWrong: 0,
       questions: [{ text: '', imageUrl: '', options: [{ value: '' }, { value: '' }, { value: '' }, { value: '' }, { value: 'Not Attempted' }], correctAnswer: '' }],
-      guidelines: '1. This test consists of multiple-choice questions.\n2. Do not refresh the page during the test.\n3. Your test will be submitted automatically when the timer runs out.',
+      guidelines: '1. This test consists of multiple-choice questions.\\n2. Do not refresh the page during the test.\\n3. Your test will be submitted automatically when the timer runs out.',
       categoryId: '',
     },
     mode: 'onChange',
@@ -618,13 +727,9 @@ export default function ManageTestsPage() {
   });
 
   const onCreateSubmit = async (data: TestFormData) => {
-    const newTest: Omit<Test, 'id'> = {
-      title: data.title,
-      duration: data.duration,
-      marksPerCorrect: data.marksPerCorrect,
-      negativeMarksPerWrong: data.negativeMarksPerWrong,
-      guidelines: data.guidelines,
-      categoryId: data.categoryId,
+    const newTest: Test = {
+      id: `new-${Date.now()}`,
+      ...data,
       questions: data.questions.map((q, index) => ({
         id: `${Date.now()}-${index}`,
         text: q.text,
@@ -635,16 +740,16 @@ export default function ManageTestsPage() {
     };
 
     try {
-      await updateTest(newTest as Test); // Casting because the hook will handle the ID
+      await updateTest(newTest);
       toast({
         title: 'Test Created!',
         description: 'The new test has been added successfully.',
       });
       createForm.reset({
         ...createForm.formState.defaultValues,
+        categoryId: selectedCategory?.id || '',
         title: '',
         questions: [{ text: '', imageUrl: '', options: [{ value: '' }, { value: '' }, { value: '' }, { value: '' }, { value: 'Not Attempted' }], correctAnswer: '' }],
-        categoryId: selectedCategory?.id || '',
       });
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to save the test.', variant: 'destructive' });
@@ -673,7 +778,7 @@ export default function ManageTestsPage() {
 
   const handleSaveCategory = async (data: CategoryFormData) => {
     try {
-        const categoryData: Partial<Category> = {
+        const categoryData: Category = {
             id: data.id || `cat-${Date.now()}`,
             name: data.name,
             logoImageUrl: data.logoImageUrl,
@@ -683,9 +788,7 @@ export default function ManageTestsPage() {
             languages: data.languages,
             features: data.features ? data.features.split(',').map(s => s.trim()).filter(Boolean) : [],
         };
-        
-        await updateCategory(categoryData as Category);
-
+        await updateCategory(categoryData);
         toast({ title: data.id ? "Category Updated!" : "Category Created!", description: `${data.name} has been saved.` });
 
     } catch (error) {
@@ -703,6 +806,7 @@ export default function ManageTestsPage() {
 
           setCategoryToDelete(null);
           toast({ title: "Category Deleted", variant: 'destructive' });
+          mutateTests(); // Revalidate tests as some might be uncategorized now
 
       } catch (error) {
           toast({ title: "Error", description: "Could not delete category.", variant: "destructive" });
@@ -711,8 +815,8 @@ export default function ManageTestsPage() {
 
   const uncategorizedTests = useMemo(() => {
     if (!tests || !categories) return [];
-    const categorizedIds = new Set(categories.map(c => c.id));
-    return tests.filter(t => !t.categoryId || !categorizedIds.has(t.categoryId));
+    const categorizedIds = new Set((categories || []).map(c => c.id));
+    return (tests || []).filter(t => !t.categoryId || !categorizedIds.has(t.categoryId));
   }, [tests, categories]);
 
   const handleSelectCategory = (category: Category) => {
@@ -772,11 +876,22 @@ export default function ManageTestsPage() {
 
                 <Separator />
                 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Create New Test</CardTitle>
+                        <CardDescription>
+                            You can either generate questions with AI and then edit them, or create the entire test manually below.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <AITestGenerator form={createForm} />
+                    </CardContent>
+                </Card>
+
                 <Form {...createForm}>
                     <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-8">
-                    <h2 className="text-2xl font-semibold flex items-center gap-2"><FilePenLine /> Manual Test Creator</h2>
                     <Card>
-                        <CardHeader><CardTitle>Test Details</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Test Details & Questions</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                         <FormField control={createForm.control} name="title" render={({ field }) => (
                             <FormItem>

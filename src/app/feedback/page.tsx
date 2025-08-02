@@ -50,7 +50,7 @@ function FeedbackForm() {
         city: data.city,
         message: data.message,
         photoUrl: data.photoUrl,
-        createdAt: Date.now(),
+        createdAt: new Date(),
         status: "pending",
         order: feedbacks?.length || 0,
       };

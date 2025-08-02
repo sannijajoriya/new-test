@@ -47,7 +47,7 @@ export default function ReportChatDialog({ report, isOpen, onClose, onUpdate, ro
             const newMessage: ChatMessage = {
                 sender: role,
                 message: data.message,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
 
             const updatedReport = { ...report };

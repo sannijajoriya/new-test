@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { loginWithPassword, loading } = useAuth();
+  const { login, loading } = useAuth();
   const user = useUser();
   const { toast } = useToast();
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const { success, message } = await loginWithPassword(email, password);
+    const { success, message } = await login(email, password);
     if (success) {
       toast({
         title: 'Login Successful!',

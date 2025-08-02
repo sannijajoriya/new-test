@@ -35,8 +35,8 @@ function TestSeriesList() {
 
     const uncategorizedCount = useMemo(() => {
         if (!tests || !categories) return 0;
-        const categorizedIds = new Set(categories.map(c => c.id));
-        return tests.filter(t => !t.categoryId || !categorizedIds.has(t.categoryId)).length;
+        const categorizedIds = new Set((categories || []).map(c => c.id));
+        return (tests || []).filter(t => !t.categoryId || !categorizedIds.has(t.categoryId)).length;
     }, [tests, categories]);
 
     if (isLoading) {
@@ -224,7 +224,7 @@ function MyReportsTab() {
 
     const userReports = useMemo(() => {
         if (!user || !reports) return [];
-        return reports.filter(r => r.studentId === user.id).sort((a,b) => b.createdAt - a.createdAt);
+        return reports.filter(r => r.studentId === user.id).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [user, reports]);
 
 

@@ -90,6 +90,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       logout,
       signup,
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [authUser, loading, logout]
   );
 
