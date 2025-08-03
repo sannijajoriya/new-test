@@ -13,7 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Send, Search, User as UserIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, useFormattedTimestamp } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -24,6 +24,34 @@ const chatSchema = z.object({
   message: z.string().min(1, "Message cannot be empty."),
 });
 type ChatForm = z.infer<typeof chatSchema>;
+
+
+function ChatMessageDisplay({ msg, student, adminUser }: { msg: DirectMessage, student: User | undefined, adminUser: User | null }) {
+    const formattedTime = useFormattedTimestamp(msg.timestamp);
+    
+    return (
+         <div className={cn("flex items-end gap-2", msg.sender === 'admin' ? "justify-end" : "justify-start")}>
+            {msg.sender === 'student' ? (
+                student && <Avatar className="h-8 w-8">
+                    <AvatarImage src={student?.profilePictureUrl} alt={student?.fullName} />
+                    <AvatarFallback>{student?.fullName.charAt(0)}</AvatarFallback>
+                </Avatar>
+            ) : (
+                adminUser && <Avatar className="h-8 w-8">
+                    <AvatarImage src={adminUser?.profilePictureUrl} alt={adminUser?.fullName} />
+                    <AvatarFallback>{adminUser?.fullName?.charAt(0) || 'A'}</AvatarFallback>
+                </Avatar>
+            )}
+            <div className={cn(
+                "max-w-xs md:max-w-md rounded-lg px-3 py-2",
+                msg.sender === 'admin' ? "bg-primary text-primary-foreground" : "bg-muted"
+            )}>
+                <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                <p className="text-xs text-right opacity-70 mt-1">{formattedTime || <Skeleton className="h-3 w-12" />}</p>
+            </div>
+        </div>
+    )
+}
 
 function ChatPanel() {
     const { toast } = useToast();
@@ -96,7 +124,7 @@ function ChatPanel() {
             const updatedThread = {
                 ...threadToUpdate,
                 messages: [...threadToUpdate.messages, newMessage],
-                lastMessageAt: newMessage.timestamp,
+                lastMessageAt: newMessage.timestamp.toISOString(),
             };
             
             await updateChatThread(updatedThread);
@@ -189,28 +217,8 @@ function ChatPanel() {
                                 <div className="space-y-4">
                                 {selectedThread.messages.map((msg, index) => {
                                     const student = getStudentData(selectedThread.studentId);
-                                    return (
-                                    <div key={index} className={cn("flex items-end gap-2", msg.sender === 'admin' ? "justify-end" : "justify-start")}>
-                                        {msg.sender === 'student' ? (
-                                            student && <Avatar className="h-8 w-8">
-                                                <AvatarImage src={student?.profilePictureUrl} alt={student?.fullName} />
-                                                <AvatarFallback>{selectedThread.studentName.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                        ) : (
-                                            adminUser && <Avatar className="h-8 w-8">
-                                                <AvatarImage src={adminUser?.profilePictureUrl} alt={adminUser?.fullName} />
-                                                <AvatarFallback>{adminUser?.fullName?.charAt(0) || 'A'}</AvatarFallback>
-                                            </Avatar>
-                                        )}
-                                        <div className={cn(
-                                            "max-w-xs md:max-w-md rounded-lg px-3 py-2",
-                                            msg.sender === 'admin' ? "bg-primary text-primary-foreground" : "bg-muted"
-                                        )}>
-                                            <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                                            <p className="text-xs text-right opacity-70 mt-1">{new Date(msg.timestamp).toLocaleTimeString()}</p>
-                                        </div>
-                                    </div>
-                                )})}
+                                    return <ChatMessageDisplay key={index} msg={msg} student={student} adminUser={adminUser} />
+                                })}
                                 </div>
                             </ScrollArea>
                          </CardContent>

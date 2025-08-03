@@ -12,15 +12,32 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { cn, useFormattedTimestamp } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Send } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from './ui/skeleton';
 
 const reportChatSchema = z.object({
     message: z.string().min(1, "Message cannot be empty."),
 });
 type ReportChatForm = z.infer<typeof reportChatSchema>;
+
+function ChatMessageDisplay({ chat, role }: { chat: ChatMessage, role: 'student' | 'admin' }) {
+    const formattedTime = useFormattedTimestamp(chat.timestamp);
+
+    return (
+        <div className={cn("flex items-end gap-2", chat.sender === role ? "justify-end" : "justify-start")}>
+             <div className={cn(
+                "max-w-xs md:max-w-md rounded-lg px-3 py-2",
+                chat.sender === role ? "bg-primary text-primary-foreground" : "bg-muted"
+            )}>
+                <p className="text-sm">{chat.message}</p>
+                <p className="text-xs text-right opacity-70 mt-1">{formattedTime || <Skeleton className="h-3 w-12" />}</p>
+            </div>
+        </div>
+    );
+}
 
 export default function ReportChatDialog({ report, isOpen, onClose, onUpdate, role }: { report: Report | null, isOpen: boolean, onClose: () => void, onUpdate: (report: Report) => void, role: 'student' | 'admin' }) {
     const { toast } = useToast();
@@ -47,7 +64,7 @@ export default function ReportChatDialog({ report, isOpen, onClose, onUpdate, ro
             const newMessage: ChatMessage = {
                 sender: role,
                 message: data.message,
-                timestamp: new Date(),
+                timestamp: Date.now(),
             };
 
             const updatedReport = { ...report };
@@ -89,15 +106,7 @@ export default function ReportChatDialog({ report, isOpen, onClose, onUpdate, ro
                     <ScrollArea className="h-64 w-full rounded-md border p-4">
                         <div ref={chatContainerRef} className="space-y-4">
                             {report.chat.map((chat, index) => (
-                                <div key={index} className={cn("flex items-end gap-2", chat.sender === role ? "justify-end" : "justify-start")}>
-                                     <div className={cn(
-                                        "max-w-xs md:max-w-md rounded-lg px-3 py-2",
-                                        chat.sender === role ? "bg-primary text-primary-foreground" : "bg-muted"
-                                    )}>
-                                        <p className="text-sm">{chat.message}</p>
-                                        <p className="text-xs text-right opacity-70 mt-1">{new Date(chat.timestamp).toLocaleTimeString()}</p>
-                                    </div>
-                                </div>
+                                <ChatMessageDisplay key={index} chat={chat} role={role} />
                             ))}
                        </div>
                     </ScrollArea>

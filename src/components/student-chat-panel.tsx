@@ -13,7 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Send, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, useFormattedTimestamp } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { FullScreenImageViewer } from './full-screen-image-viewer';
@@ -25,8 +25,51 @@ const chatSchema = z.object({
 });
 type ChatForm = z.infer<typeof chatSchema>;
 
+function ChatMessageDisplay({ msg }: { msg: DirectMessage }) {
+    const { data: user } = useUser();
+    const { adminUser } = useAdminUser();
+    const [viewingImage, setViewingImage] = useState<string | null>(null);
+
+    const formattedTime = useFormattedTimestamp(msg.timestamp);
+
+    const isStudent = msg.sender === 'student';
+    const userToShow = isStudent ? user : adminUser;
+
+    return (
+        <>
+        <div className={cn("flex items-end gap-2", isStudent ? "justify-end" : "justify-start")}>
+            {!isStudent && userToShow && (
+                <Avatar className="h-8 w-8 cursor-pointer" onClick={() => { if(userToShow.profilePictureUrl) setViewingImage(userToShow.profilePictureUrl); }}>
+                    <AvatarImage src={userToShow.profilePictureUrl} alt={userToShow.fullName} />
+                    <AvatarFallback>{userToShow.fullName?.charAt(0) || 'A'}</AvatarFallback>
+                </Avatar>
+            )}
+            <div className={cn(
+                "max-w-xs md:max-w-md rounded-2xl px-3 py-2 whitespace-pre-wrap shadow-md",
+                isStudent ? "bg-primary text-primary-foreground" : "bg-muted"
+            )}>
+                <p className="text-sm">{msg.text}</p>
+                <p className="text-xs text-right opacity-70 mt-1">{formattedTime || <Skeleton className="h-3 w-12" />}</p>
+            </div>
+            {isStudent && userToShow && (
+                <Avatar className="h-8 w-8 cursor-pointer" onClick={() => { if(userToShow.profilePictureUrl) setViewingImage(userToShow.profilePictureUrl); }}>
+                    <AvatarImage src={userToShow.profilePictureUrl} alt={userToShow.fullName} />
+                    <AvatarFallback>{userToShow.fullName?.charAt(0)}</AvatarFallback>
+                </Avatar>
+            )}
+        </div>
+        <FullScreenImageViewer
+            isOpen={!!viewingImage}
+            onClose={() => setViewingImage(null)}
+            imageUrl={viewingImage}
+            alt="Profile Picture"
+        />
+        </>
+    );
+}
+
 function StudentChatPanelComponent({ className, showHeader = true }: { className?: string; showHeader?: boolean }) {
-    const user = useUser();
+    const { data: user } = useUser();
     const { settings } = useSiteSettings();
     const { toast } = useToast();
     const { data: chatThreads, updateItem: updateChatThread, deleteItem: deleteChatThread } = useChatThreads();
@@ -34,7 +77,7 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
     
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
-    const [viewingImage, setViewingImage] = useState<string | null>(null);
+    
 
     const thread = useMemo(() => {
         if (!user || !chatThreads) return null;
@@ -63,13 +106,13 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
             const newMessage: DirectMessage = {
                 sender: 'student',
                 text: data.message,
-                timestamp: new Date(),
+                timestamp: Date.now(),
             };
 
             const autoReply: DirectMessage = {
                 sender: 'admin',
-                text: settings.adminChatAutoReply,
-                timestamp: new Date(Date.now() + 1000), // a bit later to feel more natural
+                text: settings.adminChatAutoReply || "Thanks for your message. We will get back to you soon.",
+                timestamp: Date.now() + 1000, // a bit later to feel more natural
             };
 
             let updatedThread;
@@ -81,7 +124,7 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
                     studentId: user.id,
                     studentName: user.fullName,
                     messages: [newMessage, autoReply],
-                    lastMessageAt: autoReply.timestamp, 
+                    lastMessageAt: new Date(autoReply.timestamp).toISOString(), 
                     seenByAdmin: false,
                 };
             } else {
@@ -89,7 +132,7 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
                 updatedThread = {
                     ...thread,
                     messages: [...thread.messages, newMessage, autoReply],
-                    lastMessageAt: autoReply.timestamp,
+                    lastMessageAt: new Date(autoReply.timestamp).toISOString(),
                     seenByAdmin: false,
                 };
             }
@@ -104,7 +147,7 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
     };
     
     const handleClearChat = async () => {
-        if (!user) return;
+        if (!user || !deleteChatThread) return;
         try {
             await deleteChatThread(user.id);
             toast({ title: "Chat Cleared", description: "Your chat history has been deleted."});
@@ -139,33 +182,9 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
                 <CardContent className="flex-grow p-0 overflow-hidden">
                     <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
                         <div className="space-y-4">
-                        {thread && thread.messages.length > 0 ? thread.messages.map((msg, index) => {
-                             const isStudent = msg.sender === 'student';
-                             const userToShow = isStudent ? user : adminUser;
-                             return (
-                                <div key={index} className={cn("flex items-end gap-2", isStudent ? "justify-end" : "justify-start")}>
-                                    {!isStudent && userToShow && (
-                                        <Avatar className="h-8 w-8 cursor-pointer" onClick={() => { if(userToShow.profilePictureUrl) setViewingImage(userToShow.profilePictureUrl); }}>
-                                            <AvatarImage src={userToShow.profilePictureUrl} alt={userToShow.fullName} />
-                                            <AvatarFallback>{userToShow.fullName?.charAt(0) || 'A'}</AvatarFallback>
-                                        </Avatar>
-                                    )}
-                                    <div className={cn(
-                                        "max-w-xs md:max-w-md rounded-2xl px-3 py-2 whitespace-pre-wrap shadow-md",
-                                        isStudent ? "bg-primary text-primary-foreground" : "bg-muted"
-                                    )}>
-                                        <p className="text-sm">{msg.text}</p>
-                                        <p className="text-xs text-right opacity-70 mt-1">{new Date(msg.timestamp).toLocaleTimeString()}</p>
-                                    </div>
-                                    {isStudent && userToShow && (
-                                        <Avatar className="h-8 w-8 cursor-pointer" onClick={() => { if(userToShow.profilePictureUrl) setViewingImage(userToShow.profilePictureUrl); }}>
-                                            <AvatarImage src={userToShow.profilePictureUrl} alt={userToShow.fullName} />
-                                            <AvatarFallback>{userToShow.fullName?.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                    )}
-                                </div>
-                            );
-                        }) : (
+                        {thread && thread.messages.length > 0 ? thread.messages.map((msg, index) => (
+                           <ChatMessageDisplay key={index} msg={msg} />
+                        )) : (
                             <div className="text-center text-muted-foreground h-full flex flex-col justify-center items-center">
                                 <p>No messages yet. Start the conversation!</p>
                             </div>
@@ -205,12 +224,6 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <FullScreenImageViewer
-                isOpen={!!viewingImage}
-                onClose={() => setViewingImage(null)}
-                imageUrl={viewingImage}
-                alt="Profile Picture"
-            />
         </>
     )
 }
