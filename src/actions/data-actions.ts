@@ -1,13 +1,14 @@
 
 'use server';
 
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainingData, SarthiBotConversation, Feedback, SiteSettings, Question, DirectMessage, ChatMessage, SarthiBotMessage } from '@/lib/types';
 
+const prisma = new PrismaClient();
+
 // Helper to handle JSON conversion for Prisma - no longer needed for fields that are now JSON type
 function serialize<T>(data: T): T {
-    // BigInt serialization is handled by Prisma's JSON protocol, but this is a good safety net.
     return JSON.parse(JSON.stringify(data, (key, value) =>
         typeof value === 'bigint' ? value.toString() : value
     ));
@@ -72,17 +73,14 @@ export async function createUser(fullName: string, email: string, password: stri
     const hashedPassword = await bcrypt.hash(password, 10);
     const userRole = email.toLowerCase() === 'sunnyjajoriya2003@gmail.com' ? 'admin' : 'student';
 
-    const newUser = await prisma.user.create({
+    return serialize(await prisma.user.create({
         data: {
             fullName,
             email,
             password: hashedPassword,
             role: userRole,
         }
-    });
-
-    const { password: _, ...userWithoutPassword } = newUser;
-    return serialize(userWithoutPassword as User);
+    }));
 }
 
 export async function verifyPassword(email: string, password: string): Promise<User | null> {
@@ -221,3 +219,4 @@ export async function removeSarthiBotConversation(conversationId: string) {
     // ID is studentId in this case
     return await prisma.sarthiBotConversation.delete({ where: { studentId: conversationId } });
 }
+
