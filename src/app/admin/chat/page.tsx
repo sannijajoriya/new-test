@@ -74,7 +74,7 @@ function ChatPanel() {
 
     const sortedThreads = useMemo(() => {
         if (!chatThreads) return [];
-        return [...chatThreads].sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+        return [...chatThreads].sort((a, b) => b.lastMessageAt - a.lastMessageAt);
     }, [chatThreads]);
 
     useEffect(() => {
@@ -118,13 +118,13 @@ function ChatPanel() {
             const newMessage: DirectMessage = {
                 sender: 'admin',
                 text: data.message,
-                timestamp: new Date(),
+                timestamp: Date.now(),
             };
 
             const updatedThread = {
                 ...threadToUpdate,
                 messages: [...threadToUpdate.messages, newMessage],
-                lastMessageAt: newMessage.timestamp.toISOString(),
+                lastMessageAt: newMessage.timestamp,
             };
             
             await updateChatThread(updatedThread);

@@ -55,7 +55,7 @@ export interface Result {
 export interface ChatMessage {
   sender: 'student' | 'admin';
   message: string;
-  timestamp: Date;
+  timestamp: number;
 }
 
 export interface Report {
@@ -76,7 +76,7 @@ export interface Report {
 export interface DirectMessage {
   sender: 'student' | 'admin';
   text: string;
-  timestamp: Date;
+  timestamp: number;
 }
 
 export interface ChatThread {
@@ -84,7 +84,7 @@ export interface ChatThread {
   studentId: string;
   studentName: string;
   messages: DirectMessage[];
-  lastMessageAt: Date;
+  lastMessageAt: number;
   seenByAdmin: boolean;
 }
 

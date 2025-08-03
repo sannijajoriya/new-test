@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { useState, useEffect } from 'react';
@@ -11,8 +12,11 @@ export function useFormattedTimestamp(timestamp: number | Date) {
 
   useEffect(() => {
     // This effect runs only on the client, after hydration
-    const date = new Date(timestamp);
-    setFormattedTime(date.toLocaleTimeString());
+    // It prevents a mismatch between server and client rendered times
+    if (timestamp) {
+        const date = new Date(timestamp);
+        setFormattedTime(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }
   }, [timestamp]);
 
   return formattedTime;
