@@ -85,11 +85,18 @@ const sarthiBotFlow = ai.defineFlow(
         ...(input.history || []),
         { role: 'user' as const, content: userMessageContent }
     ];
+    
+    // Ensure the conversation starts with a user message for the API
+    let aicall_messages = messages;
+    if (aicall_messages.length > 0 && aicall_messages[0].role === 'model') {
+        aicall_messages = aicall_messages.slice(1);
+    }
+
 
     const {output} = await ai.generate({
         model: 'googleai/gemini-2.0-flash',
         system: systemPrompt,
-        messages: messages,
+        messages: aicall_messages,
         output: {
             schema: SarthiBotOutputSchema,
         }

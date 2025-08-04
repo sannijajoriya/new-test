@@ -1,4 +1,6 @@
 
+
+// NOTE: `@@unique([testId, userId])` is enforced in the schema for the Result model.
 export interface Category {
   id: string;
   name: string;
@@ -19,7 +21,7 @@ export interface Question {
 }
 
 export interface Test {
-  id: string;
+  id:string;
   title: string;
   duration: number; 
   questions: Question[];
@@ -55,7 +57,7 @@ export interface Result {
 export interface ChatMessage {
   sender: 'student' | 'admin';
   message: string;
-  timestamp: number;
+  timestamp: Date;
 }
 
 export interface Report {
@@ -76,7 +78,7 @@ export interface Report {
 export interface DirectMessage {
   sender: 'student' | 'admin';
   text: string;
-  timestamp: number;
+  timestamp: Date;
 }
 
 export interface ChatThread {
@@ -84,7 +86,7 @@ export interface ChatThread {
   studentId: string;
   studentName: string;
   messages: DirectMessage[];
-  lastMessageAt: number;
+  lastMessageAt: Date;
   seenByAdmin: boolean;
 }
 

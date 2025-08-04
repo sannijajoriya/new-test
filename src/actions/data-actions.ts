@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { PrismaClient } from '@prisma/client';
@@ -134,14 +135,27 @@ export async function upsertCategory(category: Category) {
     }));
 }
 
-export async function upsertResult(result: Result) {
-    const data = { ...result };
-    return serialize(await prisma.result.upsert({
-        where: { id: result.id || 'new' },
-        update: data as any,
-        create: data as any,
-    }));
+export async function upsertResult(result: Omit<Result, 'id'>): Promise<Result> {
+    const { testId, userId } = result;
+
+    const dataToUpsert = {
+        ...result,
+        submittedAt: new Date(result.submittedAt),
+    };
+
+    const createdOrUpdatedResult = await prisma.result.upsert({
+        where: {
+            testId_userId: {
+                testId,
+                userId,
+            },
+        },
+        update: dataToUpsert,
+        create: dataToUpsert,
+    });
+    return serialize(createdOrUpdatedResult) as Result;
 }
+
 
 export async function upsertReport(report: Report) {
     const data = { ...report };
@@ -153,7 +167,11 @@ export async function upsertReport(report: Report) {
 }
 
 export async function upsertChatThread(thread: ChatThread) {
-    const data = { ...thread };
+    const data = { 
+        ...thread,
+        lastMessageAt: new Date(thread.lastMessageAt),
+        messages: thread.messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) }))
+    };
     return serialize(await prisma.chatThread.upsert({
         where: { studentId: thread.studentId },
         update: data as any,

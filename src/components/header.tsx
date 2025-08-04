@@ -159,7 +159,7 @@ export function Header() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   const unreadChatCount = React.useMemo(() => {
-    if (user?.role !== 'admin' || !chatThreads) return 0;
+    if (user?.role !== 'admin' || !Array.isArray(chatThreads)) return 0;
     return chatThreads.filter(t => !t.seenByAdmin).length;
   }, [user, chatThreads]);
   

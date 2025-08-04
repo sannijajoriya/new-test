@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
@@ -52,7 +53,7 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onSubmit 
             const chatMessage: ChatMessage = {
                 sender: 'student',
                 message: `Reason: ${data.reason}\nRemarks: ${data.remarks || 'N/A'}`,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
 
             const newReport: Report = {
@@ -187,15 +188,12 @@ function ResultsContent() {
   const router = useRouter();
   const reportRef = useRef<HTMLDivElement>(null);
 
-  const [test, setTest] = useState<Test | null>(null);
-  const [currentUserResult, setCurrentUserResult] = useState<RankedResult | null>(null);
-  const [rankings, setRankings] = useState<RankedResult[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [objectionQuestion, setObjectionQuestion] = useState<QuestionType | null>(null);
 
   const viewingUserId = useMemo(() => {
-    if (isUserLoading) return null;
-    return (user?.role === 'admin' && adminViewedUserId) ? adminViewedUserId : user?.id;
+    if (isUserLoading || !user) return null;
+    return (user.role === 'admin' && adminViewedUserId) ? adminViewedUserId : user.id;
   }, [user, adminViewedUserId, isUserLoading]);
 
   const pdfLibraries = useMemo(() => {
@@ -207,46 +205,38 @@ function ResultsContent() {
     }
     return null;
   }, []);
+  
+  const { test, currentUserResult, rankings } = useMemo(() => {
+    if (isLoading || !viewingUserId || !testId || !tests || !allUsers || !allResults) {
+        return { test: null, currentUserResult: null, rankings: [] };
+    }
 
-  useEffect(() => {
-    if (isLoading || !viewingUserId || !testId || !tests || !allUsers || !allResults) return;
+    const currentTest = tests.find(t => t.id === testId);
+    if (!currentTest) {
+        return { test: null, currentUserResult: null, rankings: [] };
+    }
 
-    if (user?.role === 'student' && adminViewedUserId && user.id !== adminViewedUserId) {
-        router.push('/dashboard');
-        return;
+    const testResults = allResults.filter(r => r.testId === testId);
+    if (testResults.length === 0) {
+        return { test: currentTest, currentUserResult: null, rankings: [] };
     }
     
-    try {
-        const testResults = allResults.filter(r => r.testId === testId);
-        
-        const sortedResults = [...testResults].sort((a, b) => {
-            if (b.score !== a.score) return b.score - a.score;
-            return a.timeTaken - b.timeTaken;
-        });
+    const sortedResults = [...testResults].sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.timeTaken - b.timeTaken;
+    });
 
-        const rankedResults: RankedResult[] = sortedResults.map((r, index) => {
-            const resultUser = allUsers.find(u => u.id === r.userId);
-            return { ...r, rank: index + 1, userFullName: resultUser?.fullName || 'N/A' };
-        });
-        setRankings(rankedResults);
-        
-        const userRes = rankedResults.find(r => r.userId === viewingUserId);
-        const currentTest = tests.find(t => t.id === testId);
-        
-        if (!userRes || !currentTest) {
-            setCurrentUserResult(null);
-            setTest(null);
-        } else {
-            setCurrentUserResult(userRes);
-            setTest(currentTest);
-        }
+    const rankedResults: RankedResult[] = sortedResults.map((r, index) => {
+        const resultUser = allUsers.find(u => u.id === r.userId);
+        return { ...r, rank: index + 1, userFullName: resultUser?.fullName || 'N/A' };
+    });
+    
+    const userRes = rankedResults.find(r => r.userId === viewingUserId);
 
-    } catch (e) {
-        console.error("Failed to process results", e);
-        router.push('/dashboard');
-    }
+    return { test: currentTest, currentUserResult: userRes || null, rankings: rankedResults };
 
-  }, [isLoading, testId, viewingUserId, user, router, adminViewedUserId, tests, allUsers, allResults]);
+  }, [isLoading, viewingUserId, testId, tests, allUsers, allResults]);
+
 
   const handleDownload = async () => {
     const input = reportRef.current;
@@ -349,7 +339,7 @@ function ResultsContent() {
                 </div>
                 <div className="flex items-center justify-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/30 rounded-md">
                     <MinusCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                    <span>Unanswered: {unansweredCount} ({unansweredCount * negativeMarksPerWrong} Marks)</span>
+                    <span>Unanswered: {unansweredCount}</span>
                 </div>
            </CardFooter>
         </Card>
@@ -416,7 +406,7 @@ function ResultsContent() {
                   </div>
                   {!userAnswer && (
                      <Alert variant="destructive" className="mt-4 ml-8">
-                        <AlertDescription>This question was not answered and received negative marks (if applicable).</AlertDescription>
+                        <AlertDescription>This question was not answered.</AlertDescription>
                     </Alert>
                   )}
                 </div>

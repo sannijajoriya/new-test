@@ -48,7 +48,7 @@ function ChatMessageDisplay({ msg, student, adminUser }: { msg: DirectMessage, s
                 msg.sender === 'admin' ? "bg-primary text-primary-foreground" : "bg-muted"
             )}>
                 <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                <p className="text-xs text-right opacity-70 mt-1">{formattedTime || <Skeleton className="h-3 w-12" />}</p>
+                <div className="text-xs text-right opacity-70 mt-1">{formattedTime || <Skeleton className="h-3 w-12" />}</div>
             </div>
         </div>
     )
@@ -119,7 +119,7 @@ function ChatPanel() {
             const newMessage: DirectMessage = {
                 sender: 'admin',
                 text: data.message,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
 
             const updatedThread = {

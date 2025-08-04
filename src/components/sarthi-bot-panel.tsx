@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { SarthiBotMessage, SarthiBotTrainingData, SarthiBotConversation, ChatHistory } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -59,7 +59,11 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const userConversation = conversations?.find(c => c.studentId === user?.id);
+    const userConversation = useMemo(() => {
+        if (!user || !Array.isArray(conversations)) return null;
+        return conversations.find(c => c.studentId === user.id);
+    }, [user, conversations]);
+
 
     useEffect(() => {
         if (userConversation && userConversation.messages.length > 0) {
@@ -67,7 +71,7 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
         } else if (settings?.botIntroMessage) {
             setMessages([{ role: 'bot', text: settings.botIntroMessage }]);
         }
-    }, [userConversation, settings]);
+    }, [userConversation, settings?.botIntroMessage]);
 
     const saveConversation = useCallback((updatedMessages: SarthiBotMessage[]) => {
         if (!user || !updateSarthiBotConversation) return;
@@ -81,12 +85,6 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
         updateSarthiBotConversation(newConversation);
     }, [user, updateSarthiBotConversation]);
 
-    useEffect(() => {
-        if (messages.length > (settings?.botIntroMessage ? 1 : 0)) {
-            saveConversation(messages);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [messages, settings]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -143,7 +141,7 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
         setIsLoading(true);
         const userMessage: SarthiBotMessage = {
           role: 'user',
-          text: data.message,
+          text: data.message || '',
           ...(imagePreview && { image: imagePreview }),
         };
         const currentImageData = imageData;
@@ -171,7 +169,7 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
                 }).slice(0, -1); // Exclude the last user message which is sent as the main prompt
 
             const result = await askSarthiBot({ 
-                text: data.message,
+                text: userMessage.text || '',
                 photoDataUri: currentImageData || undefined,
                 history: historyForAI,
                 trainingData: trainingData || [],
@@ -182,7 +180,9 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
                 role: 'bot',
                 text: result.response,
             };
-            setMessages(prev => [...prev, botMessage]);
+            const finalMessages = [...updatedMessages, botMessage];
+            setMessages(finalMessages);
+            saveConversation(finalMessages);
 
         } catch (e) {
             console.error(e);
@@ -191,7 +191,10 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
                 role: 'bot',
                 text: "माफ़ कीजिए, मुझे एक त्रुटि का सामना करना पड़ा। कृपया थोड़ी देर बाद पुनः प्रयास करें।",
             };
-            setMessages(prev => [...prev, botMessage]);
+            const finalMessages = [...updatedMessages, botMessage];
+            setMessages(finalMessages);
+            saveConversation(finalMessages);
+
         } finally {
              setIsLoading(false);
         }

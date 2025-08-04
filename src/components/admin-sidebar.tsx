@@ -132,7 +132,7 @@ export function AdminSidebar({ user }: { user: User | null }) {
   const { data: chatThreads } = useChatThreads();
 
   const unreadChatCount = useMemo(() => {
-    if (!chatThreads) return 0;
+    if (!Array.isArray(chatThreads)) return 0;
     return chatThreads.filter(t => !t.seenByAdmin).length;
   }, [chatThreads]);
 

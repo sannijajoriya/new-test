@@ -50,7 +50,7 @@ function ChatMessageDisplay({ msg }: { msg: DirectMessage }) {
                 isStudent ? "bg-primary text-primary-foreground" : "bg-muted"
             )}>
                 <p className="text-sm">{msg.text}</p>
-                <p className="text-xs text-right opacity-70 mt-1">{formattedTime || <Skeleton className="h-3 w-12" />}</p>
+                <div className="text-xs text-right opacity-70 mt-1">{formattedTime || <Skeleton className="h-3 w-12" />}</div>
             </div>
             {isStudent && userToShow && (
                 <Avatar className="h-8 w-8 cursor-pointer" onClick={() => { if(userToShow.profilePictureUrl) setViewingImage(userToShow.profilePictureUrl); }}>
@@ -80,7 +80,7 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
     const { adminUser } = useAdminUser();
 
     const thread = useMemo(() => {
-        if (!user || !chatThreads) return null;
+        if (!user || !Array.isArray(chatThreads)) return null;
         return chatThreads.find(t => t.studentId === user.id);
     }, [user, chatThreads]);
     
@@ -106,13 +106,13 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
             const newMessage: DirectMessage = {
                 sender: 'student',
                 text: data.message,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
 
             const autoReply: DirectMessage = {
                 sender: 'admin',
                 text: settings.adminChatAutoReply || "Thanks for your message. We will get back to you soon.",
-                timestamp: Date.now() + 1000, // a bit later to feel more natural
+                timestamp: new Date(Date.now() + 1000), // a bit later to feel more natural
             };
             
             const currentThread = chatThreads?.find(t => t.studentId === user.id);

@@ -183,31 +183,41 @@ function SarthiBotManager() {
     const [newAnswer, setNewAnswer] = useState('');
     const [editingItem, setEditingItem] = useState<SarthiBotTrainingData | null>(null);
     
-    const form = useForm<BotSettingsFormData>();
+    const form = useForm<BotSettingsFormData>({
+        resolver: zodResolver(botSettingsSchema),
+        defaultValues: {
+            isBotEnabled: settings?.isBotEnabled || false,
+            botName: settings?.botName || '',
+            botIntroMessage: settings?.botIntroMessage || '',
+            botAvatarUrl: settings?.botAvatarUrl || '',
+        }
+    });
 
     useEffect(() => {
-        if (settings) {
+        if(settings) {
             form.reset({
-                isBotEnabled: settings.isBotEnabled,
-                botName: settings.botName,
-                botIntroMessage: settings.botIntroMessage,
-                botAvatarUrl: settings.botAvatarUrl,
+                isBotEnabled: settings.isBotEnabled || false,
+                botName: settings.botName || '',
+                botIntroMessage: settings.botIntroMessage || '',
+                botAvatarUrl: settings.botAvatarUrl || '',
             });
         }
-    }, [settings, form]);
+    }, [settings]);
     
     const handleAddOrUpdateTrainingItem = () => {
-        if (!newQuestion.trim() || !newAnswer.trim() || !trainingData) {
+        if (!newQuestion.trim() || !newAnswer.trim()) {
             toast({ title: "Error", description: "Question and Answer cannot be empty.", variant: "destructive" });
             return;
         }
 
+        const currentData = trainingData || [];
         let updatedData;
+        
         if (editingItem) {
-            updatedData = trainingData.map(item => item.id === editingItem.id ? { ...item, question: newQuestion, answer: newAnswer } : item);
+            updatedData = currentData.map(item => item.id === editingItem.id ? { ...item, question: newQuestion, answer: newAnswer } : item);
         } else {
             const newItem = { id: `qa-${Date.now()}`, question: newQuestion, answer: newAnswer };
-            updatedData = [...trainingData, newItem];
+            updatedData = [...currentData, newItem];
         }
 
         updateSarthiBotTrainingData(updatedData);
@@ -233,7 +243,7 @@ function SarthiBotManager() {
     const onBotSettingsSubmit = (data: BotSettingsFormData) => {
         updateSettings(data);
         toast({ title: "Bot Settings Saved!", description: "The bot customization has been updated." });
-        form.reset(data);
+        form.reset(data, { keepDirty: false });
     };
 
 
@@ -325,7 +335,7 @@ function SarthiBotManager() {
                             <Table>
                                 <TableHeader><TableRow><TableHead>Question</TableHead><TableHead>Answer</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
-                                    {trainingData?.map(item => (
+                                    {Array.isArray(trainingData) && trainingData.map(item => (
                                         <TableRow key={item.id}>
                                             <TableCell className="max-w-sm truncate">{item.question}</TableCell>
                                             <TableCell className="max-w-sm truncate">{item.answer}</TableCell>
@@ -553,11 +563,11 @@ function HomepageBannerManager() {
 function ChatSettingsManager() {
     const { settings, updateSettings } = useSiteSettings();
     const { toast } = useToast();
-    const [autoReply, setAutoReply] = useState('');
+    const [autoReply, setAutoReply] = useState(settings?.adminChatAutoReply || '');
 
     useEffect(() => {
         if (settings) {
-            setAutoReply(settings.adminChatAutoReply);
+            setAutoReply(settings.adminChatAutoReply || '');
         }
     }, [settings]);
 
@@ -579,7 +589,7 @@ function ChatSettingsManager() {
                     <Label htmlFor="auto-reply">Auto-Reply Message</Label>
                     <Textarea
                         id="auto-reply"
-                        value={autoReply}
+                        value={autoReply || ''}
                         onChange={(e) => setAutoReply(e.target.value)}
                         placeholder="Enter the message to send when a student messages you."
                         rows={6}

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
@@ -99,7 +100,7 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onUpdateR
             const chatMessage: ChatMessage = {
                 sender: 'student',
                 message: `Reason: ${data.reason}\\nRemarks: ${data.remarks || 'N/A'}`,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
 
             const newReport: Report = {
@@ -436,7 +437,7 @@ function ActiveTestUI({
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        You cannot change your answers after submitting. Any unanswered questions will receive negative marks if applicable.
+                        You cannot change your answers after submitting. Any unanswered questions will be marked as incorrect.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -510,7 +511,7 @@ function TestComponent() {
 
   }, [testId, router, user, tests, categories, resultsData, isLoading]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (!test || !user || !startTime || !updateResult) return;
 
     const timeTaken = Math.round((Date.now() - startTime) / 1000);
@@ -535,10 +536,9 @@ function TestComponent() {
     const marksPerCorrect = test.marksPerCorrect || 1;
     const negativeMarksPerWrong = test.negativeMarksPerWrong || 0;
     
-    const score = (correctCount * marksPerCorrect) - (wrongCount * negativeMarksPerWrong);
+    const score = (correctCount * marksPerCorrect) + (wrongCount * negativeMarksPerWrong);
 
-    const newResult: Result = {
-      id: `${user.id}_${test.id}`,
+    const newResult: Omit<Result, 'id'> = {
       testId: test.id,
       userId: user.id,
       score,
@@ -550,10 +550,14 @@ function TestComponent() {
       submittedAt: new Date(),
     };
     
-    updateResult(newResult);
-
-    router.push(`/results/${test.id}`);
-  }, [test, user, answers, startTime, router, updateResult]);
+    try {
+        await updateResult(newResult);
+        router.push(`/results/${test.id}`);
+    } catch (e) {
+        toast({ title: "Error submitting results", variant: "destructive" });
+        console.error(e);
+    }
+  }, [test, user, answers, startTime, router, updateResult, toast]);
 
   useEffect(() => {
     if (timeLeft === null || testState !== 'active' || user?.role === 'admin') return;

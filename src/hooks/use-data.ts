@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from 'react';
@@ -124,12 +125,11 @@ export const useStudents = () => {
 
 export const useResults = () => {
     const { data, error, isLoading, mutate } = useSWR<Result[]>('results', fetcher);
-    const updateResult = React.useCallback(async (result: Result) => {
-        const optimisticData = data?.map(r => r.id === result.id ? result : r) || [result];
-        if (!data?.some(r => r.id === result.id)) {
-            optimisticData.push(result);
-        }
-        await mutate(DataActions.upsertResult(result), { optimisticData, revalidate: false });
+    const updateResult = React.useCallback(async (result: Omit<Result, 'id'>) => {
+        const newResult = await DataActions.upsertResult(result);
+        const optimisticData = data ? [...data.filter(r => r.id !== newResult.id), newResult] : [newResult];
+        await mutate(optimisticData, false);
+        return newResult;
     }, [data, mutate]);
 
     return { 
@@ -246,3 +246,4 @@ export const useSiteSettings = () => {
 
     return { settings, isLoading, error, updateSettings };
 };
+
