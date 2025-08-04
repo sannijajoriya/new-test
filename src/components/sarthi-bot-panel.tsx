@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -72,19 +73,6 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
             setMessages([{ role: 'bot', text: settings.botIntroMessage }]);
         }
     }, [userConversation, settings?.botIntroMessage]);
-
-    const saveConversation = useCallback((updatedMessages: SarthiBotMessage[]) => {
-        if (!user || !updateSarthiBotConversation) return;
-        const newConversation = {
-            id: user.id,
-            studentId: user.id,
-            studentName: user.fullName,
-            messages: updatedMessages,
-            lastMessageAt: new Date(),
-        };
-        updateSarthiBotConversation(newConversation);
-    }, [user, updateSarthiBotConversation]);
-
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -182,7 +170,18 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
             };
             const finalMessages = [...updatedMessages, botMessage];
             setMessages(finalMessages);
-            saveConversation(finalMessages);
+            
+            // Save conversation after bot response
+            if (updateSarthiBotConversation) {
+                 const newConversation = {
+                    id: user.id,
+                    studentId: user.id,
+                    studentName: user.fullName,
+                    messages: finalMessages,
+                    lastMessageAt: new Date(),
+                };
+                updateSarthiBotConversation(newConversation);
+            }
 
         } catch (e) {
             console.error(e);
@@ -193,8 +192,6 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
             };
             const finalMessages = [...updatedMessages, botMessage];
             setMessages(finalMessages);
-            saveConversation(finalMessages);
-
         } finally {
              setIsLoading(false);
         }
