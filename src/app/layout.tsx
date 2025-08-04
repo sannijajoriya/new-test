@@ -9,7 +9,6 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { LoadingProvider } from '@/hooks/use-loading';
 import { Loader } from '@/components/loader';
 import { FloatingChatButton } from '@/components/floating-chat-button';
-import { DataProvider } from '@/hooks/use-data';
 
 export const metadata: Metadata = {
   title: 'UdaanSarthi - Your Trusted Guide for Every Exam Journey',
@@ -37,7 +36,6 @@ export default function RootLayout({
         >
           <LoadingProvider>
             <AuthProvider>
-              <DataProvider>
                   <Loader />
                   <div className="relative flex min-h-screen flex-col bg-background/80 backdrop-blur-xl">
                     <Header />
@@ -46,7 +44,6 @@ export default function RootLayout({
                   </div>
                   <Toaster />
                   <FloatingChatButton />
-              </DataProvider>
             </AuthProvider>
           </LoadingProvider>
         </ThemeProvider>
