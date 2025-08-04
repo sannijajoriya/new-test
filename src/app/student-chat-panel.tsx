@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback, Suspense, useMemo } from 'react';
@@ -30,7 +31,7 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
     const { user } = useAuth();
     const { settings } = useSiteSettings();
     const { toast } = useToast();
-    const { data: chatThreads, updateItem: updateChatThread, deleteItem: deleteChatThread } = useChatThreads();
+    const { data: chatThreads, updateItem: updateChatThread, deleteItem: deleteChatThread } from useChatThreads();
     const { adminUser } = useAdminUser();
     
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
@@ -64,33 +65,26 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
             const newMessage: DirectMessage = {
                 sender: 'student',
                 text: data.message,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             };
-
-            const autoReply: DirectMessage = {
-                sender: 'admin',
-                text: settings.adminChatAutoReply,
-                timestamp: Date.now() + 1000, // a bit later to feel more natural
-            };
-
+            
+            const currentThread = chatThreads?.find(t => t.studentId === user.id);
             let updatedThread;
 
-            if (!thread) {
-                // This is the first message from this user, create a new thread
+            if (!currentThread) {
                 updatedThread = {
                     id: user.id,
                     studentId: user.id,
                     studentName: user.fullName,
-                    messages: [newMessage, autoReply],
-                    lastMessageAt: autoReply.timestamp, 
+                    messages: [newMessage],
+                    lastMessageAt: new Date(), 
                     seenByAdmin: false,
                 };
             } else {
-                // Thread exists, add the new message and the auto-reply
                 updatedThread = {
-                    ...thread,
-                    messages: [...thread.messages, newMessage, autoReply],
-                    lastMessageAt: autoReply.timestamp,
+                    ...currentThread,
+                    messages: [...currentThread.messages, newMessage],
+                    lastMessageAt: new Date(),
                     seenByAdmin: false,
                 };
             }

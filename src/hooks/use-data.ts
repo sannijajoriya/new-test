@@ -129,13 +129,20 @@ export const useResults = () => {
     const { data, error, isLoading, mutate } = useSWR<Result[]>('results', fetcher);
     
      const updateItem = React.useCallback(async (result: Omit<Result, 'id'>): Promise<Result> => {
-        // First, call the server action to get the saved result with the database ID
         const newResult = await DataActions.upsertResult(result);
-        
-        // Then, trigger a revalidation of the cache to fetch the latest data from the server.
-        // This is more reliable than trying to manually update the cache.
-        await mutate(); 
-        
+        await mutate(
+            (currentData) => {
+                if (!currentData) return [newResult];
+                const index = currentData.findIndex(r => r.testId === newResult.testId && r.userId === newResult.userId);
+                if (index !== -1) {
+                    const updatedData = [...currentData];
+                    updatedData[index] = newResult;
+                    return updatedData;
+                }
+                return [...currentData, newResult];
+            }, 
+            { revalidate: true }
+        ); 
         return newResult;
     }, [mutate]);
 
@@ -170,9 +177,15 @@ export const useChatThreads = () => {
     const { data, error, isLoading, mutate } = useSWR<ChatThread[]>('chatThreads', fetcher);
 
     const updateItem = React.useCallback(async (thread: ChatThread) => {
-        await DataActions.upsertChatThread(thread);
-        mutate();
-    }, [mutate]);
+        const optimisticData = [...(Array.isArray(data) ? data : [])];
+        const index = optimisticData.findIndex(c => c.id === thread.id);
+        if (index > -1) {
+            optimisticData[index] = thread;
+        } else {
+            optimisticData.push(thread);
+        }
+        await mutate(DataActions.upsertChatThread(thread), { optimisticData, revalidate: false });
+    }, [mutate, data]);
 
     const deleteItem = React.useCallback(async (id: string) => {
         const optimisticData = data?.filter(t => t.studentId !== id);
@@ -203,10 +216,19 @@ export const useSarthiBotTrainingData = () => {
 
 export const useSarthiBotConversations = () => {
     const { data, error, isLoading, mutate } = useSWR<SarthiBotConversation[]>('sarthiBotConversations', fetcher);
+
     const updateSarthiBotConversation = React.useCallback(async (conversation: SarthiBotConversation) => {
-        await DataActions.upsertSarthiBotConversation(conversation);
-        mutate();
-    }, [mutate]);
+        const optimisticData = [...(Array.isArray(data) ? data : [])];
+        const index = optimisticData.findIndex(c => c.id === conversation.id);
+
+        if (index > -1) {
+            optimisticData[index] = conversation;
+        } else {
+            optimisticData.push(conversation);
+        }
+
+        await mutate(DataActions.upsertSarthiBotConversation(conversation), { optimisticData, revalidate: false });
+    }, [mutate, data]);
 
     const deleteSarthiBotConversation = React.useCallback(async (id: string) => {
         const optimisticData = data?.filter(c => c.studentId !== id);

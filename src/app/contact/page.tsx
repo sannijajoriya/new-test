@@ -3,86 +3,89 @@
 
 import { useState, useEffect } from 'react';
 import { AuthGuard } from '@/components/auth-guard';
-import { StudentChatPanel } from '@/components/student-chat-panel';
 import { SarthiBotPanel } from '@/components/sarthi-bot-panel';
-import { useSiteSettings, useAllUsers } from '@/hooks/use-data';
-import { useUser } from '@/hooks/use-auth';
+import { StudentChatPanel } from '@/components/student-chat-panel';
+import { useSiteSettings } from '@/hooks/use-data';
+import { useAdminUser } from '@/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BrainCircuit } from 'lucide-react';
+import { BrainCircuit, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { FullScreenImageViewer } from '@/components/full-screen-image-viewer';
 
 function ContactPageContent() {
     const { settings } = useSiteSettings();
-    const {data: user} = useUser();
-    const { allUsers } = useAllUsers();
-    const [selectedChat, setSelectedChat] = useState<'bot' | 'admin'>('bot');
+    const { adminUser } = useAdminUser();
+    const [activeView, setActiveView] = useState<'list' | 'bot' | 'admin'>('list');
     const [viewingImage, setViewingImage] = useState<string | null>(null);
-
-    const adminUser = allUsers?.find(u => u.role === 'admin');
 
     const chatContacts = [
         {
-            id: 'bot',
+            id: 'bot' as const,
             name: settings?.botName || 'UdaanSarthi AI',
             avatar: settings?.botAvatarUrl,
             fallback: <BrainCircuit />,
             status: '🤖 AI Assistant'
         },
         {
-            id: 'admin',
+            id: 'admin' as const,
             name: adminUser?.fullName || 'Admin',
             avatar: adminUser?.profilePictureUrl,
             fallback: adminUser?.fullName?.charAt(0) || 'A',
-            status: '🟢 Online'
+            status: 'Typically replies within a few hours'
         }
     ];
 
-    if (!settings || !user) return null;
+    if (!settings) return null;
+    
+    const renderListView = () => (
+         <Card className="w-full max-w-md mx-auto rounded-2xl shadow-lg">
+            <CardContent className="p-4 space-y-3">
+                {chatContacts.map(contact => (
+                    <div
+                        key={contact.id}
+                        onClick={() => setActiveView(contact.id)}
+                        className={cn(
+                            "flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all duration-300",
+                           "hover:bg-muted/50 hover:shadow-md"
+                        )}
+                    >
+                        <Avatar className="h-12 w-12 border-2 border-primary/30" onClick={(e) => { e.stopPropagation(); if (contact.avatar) setViewingImage(contact.avatar); }}>
+                            <AvatarImage src={contact.avatar} alt={contact.name} />
+                            <AvatarFallback>{contact.fallback}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-bold">{contact.name}</p>
+                            <p className="text-xs text-muted-foreground">{contact.status}</p>
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+
+    const renderChatView = () => (
+        <div className="h-full w-full max-w-4xl mx-auto flex flex-col">
+             <div className="mb-4">
+                 <Button variant="ghost" onClick={() => setActiveView('list')}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Selection
+                </Button>
+            </div>
+            <div className="h-full min-h-[70vh] rounded-2xl shadow-lg overflow-hidden bg-background flex-grow">
+                {activeView === 'admin' && <StudentChatPanel className="h-full border-none shadow-none rounded-none bg-transparent" />}
+                {activeView === 'bot' && <SarthiBotPanel className="h-full border-none shadow-none rounded-none bg-transparent" />}
+            </div>
+        </div>
+    );
+
 
     return (
         <>
-            <div className="h-full flex-grow md:grid md:grid-cols-12 gap-6 space-y-6 md:space-y-0">
-                {/* Left Panel: Chat List */}
-                <div className="md:col-span-4 lg:col-span-3">
-                    <Card className="rounded-2xl shadow-lg h-full">
-                        <CardContent className="p-4 space-y-3">
-                            {chatContacts.map(contact => (
-                                <div
-                                    key={contact.id}
-                                    onClick={() => setSelectedChat(contact.id as 'bot' | 'admin')}
-                                    className={cn(
-                                        "flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all duration-300",
-                                        selectedChat === contact.id
-                                            ? "bg-primary/20 shadow-inner"
-                                            : "hover:bg-muted/50 hover:shadow-md"
-                                    )}
-                                >
-                                    <Avatar className="h-12 w-12 border-2 border-primary/30" onClick={(e) => { e.stopPropagation(); if (contact.avatar) setViewingImage(contact.avatar); }}>
-                                        <AvatarImage src={contact.avatar} alt={contact.name} />
-                                        <AvatarFallback>{contact.fallback}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-bold">{contact.name}</p>
-                                        <p className="text-xs text-muted-foreground">{contact.status}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Right Panel: Chat Window */}
-                <div className="md:col-span-8 lg:col-span-9 h-full min-h-[70vh] md:min-h-0">
-                    <div className="h-full rounded-2xl shadow-lg overflow-hidden bg-background">
-                        {selectedChat === 'admin' && <StudentChatPanel className="h-full border-none shadow-none rounded-none bg-transparent" />}
-                        {selectedChat === 'bot' && <SarthiBotPanel className="h-full border-none shadow-none rounded-none bg-transparent" />}
-                    </div>
-                </div>
+            <div className="h-full flex-grow flex flex-col">
+                {activeView === 'list' ? renderListView() : renderChatView()}
             </div>
-
-            <FullScreenImageViewer
+             <FullScreenImageViewer
                 isOpen={!!viewingImage}
                 onClose={() => setViewingImage(null)}
                 imageUrl={viewingImage}

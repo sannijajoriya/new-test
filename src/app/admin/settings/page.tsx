@@ -172,7 +172,7 @@ type BotSettingsFormData = z.infer<typeof botSettingsSchema>;
 
 
 function SarthiBotManager() {
-    const { settings, updateSettings } = useSiteSettings();
+    const { settings, updateSettings, isLoading: isLoadingSettings } = useSiteSettings();
     const { toast } = useToast();
     const { trainingData, updateSarthiBotTrainingData, isLoading: isLoadingTrainingData } = useSarthiBotTrainingData();
     const { conversations, isLoading: isLoadingConversations } = useSarthiBotConversations();
@@ -186,10 +186,10 @@ function SarthiBotManager() {
     const form = useForm<BotSettingsFormData>({
         resolver: zodResolver(botSettingsSchema),
         defaultValues: {
-            isBotEnabled: settings?.isBotEnabled || false,
-            botName: settings?.botName || '',
-            botIntroMessage: settings?.botIntroMessage || '',
-            botAvatarUrl: settings?.botAvatarUrl || '',
+            isBotEnabled: false,
+            botName: '',
+            botIntroMessage: '',
+            botAvatarUrl: '',
         }
     });
 
@@ -202,7 +202,7 @@ function SarthiBotManager() {
                 botAvatarUrl: settings.botAvatarUrl || '',
             });
         }
-    }, [settings]);
+    }, [settings, form]);
     
     const handleAddOrUpdateTrainingItem = () => {
         if (!newQuestion.trim() || !newAnswer.trim()) {
@@ -246,8 +246,7 @@ function SarthiBotManager() {
         form.reset(data, { keepDirty: false });
     };
 
-
-    if (!settings || isLoadingTrainingData || isLoadingConversations) return <Skeleton className="h-96 w-full" />;
+    if (isLoadingSettings || isLoadingTrainingData || isLoadingConversations) return <Skeleton className="h-96 w-full" />;
 
     return (
         <div className="space-y-6">
@@ -335,7 +334,7 @@ function SarthiBotManager() {
                             <Table>
                                 <TableHeader><TableRow><TableHead>Question</TableHead><TableHead>Answer</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
-                                    {Array.isArray(trainingData) && trainingData.map(item => (
+                                    {(trainingData || []).map(item => (
                                         <TableRow key={item.id}>
                                             <TableCell className="max-w-sm truncate">{item.question}</TableCell>
                                             <TableCell className="max-w-sm truncate">{item.answer}</TableCell>
@@ -363,7 +362,7 @@ function SarthiBotManager() {
                         <Table>
                             <TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Last Message</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
                             <TableBody>
-                                {conversations?.sort((a,b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()).map(convo => (
+                                {(conversations || []).sort((a,b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()).map(convo => (
                                     <TableRow key={convo.studentId}>
                                         <TableCell>{convo.studentName}</TableCell>
                                         <TableCell>{new Date(convo.lastMessageAt).toLocaleString()}</TableCell>
@@ -646,3 +645,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

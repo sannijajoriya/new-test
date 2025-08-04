@@ -173,7 +173,7 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
             
             // Save conversation after bot response
             if (updateSarthiBotConversation) {
-                 const newConversation = {
+                 const newConversation: SarthiBotConversation = {
                     id: user.id,
                     studentId: user.id,
                     studentName: user.fullName,
