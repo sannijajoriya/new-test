@@ -13,11 +13,11 @@ import { X } from 'lucide-react';
 const SESSION_STORAGE_KEY = 'udaanSarthiNewsBannerClosed';
 
 export function NewsBannerPopup() {
-    const { settings } = useSiteSettings();
+    const { settings, isLoading } = useSiteSettings();
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
+        if (typeof window === 'undefined' || isLoading) return;
 
         if (!settings || !settings.isNewsBannerEnabled || !settings.newsBannerImageUrl) {
             setIsOpen(false);
@@ -35,7 +35,7 @@ export function NewsBannerPopup() {
         const timer = setTimeout(() => setIsOpen(true), 500);
         return () => clearTimeout(timer);
 
-    }, [settings]);
+    }, [settings, isLoading]);
 
     const handleClose = () => {
         setIsOpen(false);
@@ -44,7 +44,7 @@ export function NewsBannerPopup() {
         }
     };
 
-    if (!settings) {
+    if (isLoading || !settings) {
         return null;
     }
 

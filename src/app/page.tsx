@@ -12,7 +12,7 @@ import { useSiteSettings } from '@/hooks/use-data';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
-  const { settings } = useSiteSettings();
+  const { settings, isLoading } = useSiteSettings();
 
   const features = [
     {
@@ -57,7 +57,10 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="text-center flex flex-col items-center">
          <div className="relative w-full rounded-2xl overflow-hidden bg-muted/30 aspect-[4/3] md:aspect-[2.5/1]">
-             {settings ? (
+             {isLoading ? (
+                <Skeleton className="h-full w-full" />
+             ) : (
+                <>
                 <Image 
                     src={settings.heroBannerImageUrl || "https://placehold.co/1200x480.png"}
                     alt="A student's journey towards success" 
@@ -66,24 +69,23 @@ export default function HomePage() {
                     data-ai-hint="student journey achievement"
                     priority
                 />
-             ) : (
-                <Skeleton className="h-full w-full" />
+                <div 
+                    className="absolute inset-0 flex flex-col items-center justify-center text-white p-4"
+                    style={{ backgroundColor: `rgba(0, 0, 0, ${settings.heroBannerOverlayOpacity ?? 0})` }}
+                >
+                    {settings.isHeroBannerTextEnabled && (
+                        <div className="text-center">
+                            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-amber-50 to-blue-300 drop-shadow-lg whitespace-pre-wrap">
+                                {title}
+                            </h1>
+                            <p className="mt-4 text-lg md:text-xl max-w-3xl text-primary-foreground/90 font-medium whitespace-pre-wrap">
+                               {subtitles.join('\n')}
+                            </p>
+                        </div>
+                    )}
+                </div>
+                </>
              )}
-             <div 
-                className="absolute inset-0 flex flex-col items-center justify-center text-white p-4"
-                style={{ backgroundColor: `rgba(0, 0, 0, ${settings?.heroBannerOverlayOpacity ?? 0})` }}
-             >
-                {settings?.isHeroBannerTextEnabled && (
-                    <div className="text-center">
-                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-amber-50 to-blue-300 drop-shadow-lg whitespace-pre-wrap">
-                            {title}
-                        </h1>
-                        <p className="mt-4 text-lg md:text-xl max-w-3xl text-primary-foreground/90 font-medium whitespace-pre-wrap">
-                           {subtitles.join('\n')}
-                        </p>
-                    </div>
-                )}
-             </div>
         </div>
         <div className="mt-8 md:-mt-8 md:z-10">
           <Button asChild size="lg" className="rounded-full">
