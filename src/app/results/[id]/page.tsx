@@ -535,7 +535,6 @@ function TestComponent() {
     const marksPerCorrect = test.marksPerCorrect || 1;
     const negativeMarksPerWrong = test.negativeMarksPerWrong || 0;
     
-    // Corrected score calculation
     const score = (correctCount * marksPerCorrect) - (wrongCount * negativeMarksPerWrong);
 
     const newResult: Result = {
@@ -624,7 +623,8 @@ function TestComponent() {
                     <AlertDialogAction onClick={startTest}>Yes, Start Test</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
-        </>
+        </AlertDialog>
+      </>
     );
   }
 
@@ -657,3 +657,5 @@ export default function TestPage() {
         </AuthGuard>
     );
 }
+
+    
