@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 import { AuthGuard } from '@/components/auth-guard';
 import { StudentChatPanel } from '@/components/student-chat-panel';
 import { SarthiBotPanel } from '@/components/sarthi-bot-panel';
-import { useSiteSettings, useAllUsers, useUser } from '@/hooks/use-data';
+import { useSiteSettings, useAllUsers } from '@/hooks/use-data';
+import { useUser } from '@/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BrainCircuit } from 'lucide-react';
@@ -14,7 +15,7 @@ import { FullScreenImageViewer } from '@/components/full-screen-image-viewer';
 
 function ContactPageContent() {
     const { settings } = useSiteSettings();
-    const user = useUser();
+    const {data: user} = useUser();
     const { allUsers } = useAllUsers();
     const [selectedChat, setSelectedChat] = useState<'bot' | 'admin'>('bot');
     const [viewingImage, setViewingImage] = useState<string | null>(null);

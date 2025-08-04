@@ -18,7 +18,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { FeedbackCarousel } from '@/components/feedback-carousel';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTests, useCategories, useResults, useReports, useUser } from '@/hooks/use-data';
+import { useTests, useCategories, useResults, useReports } from '@/hooks/use-data';
+import { useUser } from '@/hooks/use-auth';
 
 function formatUserCount(count?: number) {
     if (!count) return '0';
@@ -135,7 +136,7 @@ function TestSeriesList() {
                     </CardContent>
                      <CardFooter>
                         <Button className="w-full bg-[#00BFFF] hover:bg-[#00a6d9] text-white font-bold">View Test Series</Button>
-                    </CardFooter>
+                     </CardFooter>
                 </Card>
             ))}
             {uncategorizedTests}
@@ -144,7 +145,7 @@ function TestSeriesList() {
 }
 
 function MyProgressTab() {
-    const user = useUser();
+    const { data: user } = useUser();
     const { data: tests, isLoading: isLoadingTests } = useTests();
     const { data: results, isLoading: isLoadingResults } = useResults();
 
@@ -218,7 +219,7 @@ function MyProgressTab() {
 }
 
 function MyReportsTab() {
-    const user = useUser();
+    const { data: user } = useUser();
     const { data: reports, updateItem: updateReport, isLoading } = useReports();
     const [viewingReport, setViewingReport] = useState<Report | null>(null);
 
@@ -293,7 +294,7 @@ function MyReportsTab() {
 }
 
 function DashboardContent() {
-  const user = useUser();
+  const { data: user } = useUser();
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'series';
 

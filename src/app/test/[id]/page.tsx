@@ -25,7 +25,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Flag, Library, Clock, ListChecks, Hash, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTests, useCategories, useResults, useReports, useUser } from '@/hooks/use-data';
+import { useTests, useCategories, useResults, useReports } from '@/hooks/use-data';
+import { useUser } from '@/hooks/use-auth';
 import { Badge } from '@/components/ui/badge';
 
 const reportSchema = z.object({
@@ -97,8 +98,8 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onUpdateR
         try {
             const chatMessage: ChatMessage = {
                 sender: 'student',
-                message: `Reason: ${data.reason}\nRemarks: ${data.remarks || 'N/A'}`,
-                timestamp: new Date(),
+                message: `Reason: ${data.reason}\\nRemarks: ${data.remarks || 'N/A'}`,
+                timestamp: Date.now(),
             };
 
             const newReport: Report = {
@@ -462,12 +463,12 @@ function TestComponent() {
   const params = useParams<{ id: string }>();
   const testId = params.id;
   const router = useRouter();
-  const user = useUser();
+  const { data: user, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
   
   const { data: tests, isLoading: isLoadingTests } = useTests();
   const { data: categories, isLoading: isLoadingCategories } = useCategories();
-  const { data: results, updateResult, isLoading: isLoadingResults } = useResults();
+  const { data: resultsData, updateItem: updateResult, isLoading: isLoadingResults } = useResults();
 
   const [test, setTest] = useState<Test | null>(null);
   const [categoryName, setCategoryName] = useState('Uncategorized');
@@ -476,10 +477,10 @@ function TestComponent() {
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [startTime, setStartTime] = useState(0);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   
-  const isLoading = isLoadingTests || isLoadingCategories || isLoadingResults;
+  const isLoading = isLoadingTests || isLoadingCategories || isLoadingResults || isUserLoading;
 
   useEffect(() => {
     if (!user || !testId || isLoading) return;
@@ -500,14 +501,14 @@ function TestComponent() {
         return;
     }
 
-    const existingAttempt = results?.find(r => r.testId === testId && r.userId === user.id);
+    const existingAttempt = resultsData?.find(r => r.testId === testId && r.userId === user.id);
     if (existingAttempt) {
         setTestState('attempted');
     } else {
         setTestState('guidelines');
     }
 
-  }, [testId, router, user, tests, categories, results, isLoading]);
+  }, [testId, router, user, tests, categories, resultsData, isLoading]);
 
   const handleSubmit = useCallback(() => {
     if (!test || !user || !startTime || !updateResult) return;
@@ -534,7 +535,7 @@ function TestComponent() {
     const marksPerCorrect = test.marksPerCorrect || 1;
     const negativeMarksPerWrong = test.negativeMarksPerWrong || 0;
     
-    const score = (correctCount * marksPerCorrect) + ((wrongCount + unansweredCount) * negativeMarksPerWrong);
+    const score = (correctCount * marksPerCorrect) - (wrongCount * negativeMarksPerWrong);
 
     const newResult: Result = {
       id: `${user.id}_${test.id}`,

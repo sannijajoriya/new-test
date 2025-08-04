@@ -11,10 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { KeyRound, LoaderCircle } from 'lucide-react';
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useUser } from "@/hooks/use-data";
+import { useUser } from "@/hooks/use-auth";
 
 const passwordSchema = z.object({
   newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
@@ -27,11 +27,12 @@ const passwordSchema = z.object({
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
 function UpdatePasswordForm() {
-  const user = useUser();
+  const { data: user } = useUser();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAuthCode, setHasAuthCode] = useState(false);
+  const supabase = getSupabaseClient();
 
   // Check for session recovery from email link
   useEffect(() => {
@@ -40,7 +41,7 @@ function UpdatePasswordForm() {
         setHasAuthCode(true);
       }
     });
-  }, []);
+  }, [supabase]);
 
   const form = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),

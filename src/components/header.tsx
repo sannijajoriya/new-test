@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, useUser } from '@/hooks/use-auth';
 import { Menu, LogOut, User as UserIcon, Shield, LayoutDashboard, KeyRound, MessageSquare, ListChecks } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { ThemeToggle } from './theme-toggle';
@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Image from 'next/image';
-import { useSiteSettings, useChatThreads, useUser } from '@/hooks/use-data';
+import { useSiteSettings, useChatThreads } from '@/hooks/use-data';
 import { Badge } from './ui/badge';
 
 
@@ -151,8 +151,8 @@ const MobileNavLinks = ({ user, logout }: { user: User, logout: () => void }) =>
 }
 
 export function Header() {
-  const { loading } = useAuth();
-  const user = useUser();
+  const { loading: authLoading } = useAuth();
+  const { data: user, isLoading: userLoading } = useUser();
   const { logout } = useAuth();
   const { settings } = useSiteSettings();
   const { data: chatThreads } = useChatThreads();
@@ -162,11 +162,13 @@ export function Header() {
     if (user?.role !== 'admin' || !chatThreads) return 0;
     return chatThreads.filter(t => !t.seenByAdmin).length;
   }, [user, chatThreads]);
+  
+  const isLoading = authLoading || userLoading;
 
   return (
     <header className="bg-card/50 backdrop-blur-lg border-b sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between p-4">
-        <Link href={loading ? "/" : (user ? (user.role === 'admin' ? '/admin' : '/dashboard') : "/")} className="flex items-center gap-2 text-xl font-bold">
+        <Link href={isLoading ? "/" : (user ? (user.role === 'admin' ? '/admin' : '/dashboard') : "/")} className="flex items-center gap-2 text-xl font-bold">
           {(settings && settings.logoUrl) ? (
             <Image src={settings.logoUrl} alt="UdaanSarthi Logo" width={160} height={40} className="object-contain" priority />
           ) : (
@@ -174,7 +176,7 @@ export function Header() {
           )}
         </Link>
         
-        {loading ? (
+        {isLoading ? (
           <Skeleton className="h-10 w-24" />
         ) : (
           <div className="flex items-center gap-2">

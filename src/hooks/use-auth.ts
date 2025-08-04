@@ -4,9 +4,7 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLoading } from './use-loading';
-import { getSupabaseClient } from '@/lib/supabase';
 import { upsertUser, createUser, verifyPassword, fetchAllUsers } from '@/actions/data-actions';
-import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import useSWR from 'swr';
 import type { User } from '@/lib/types';
 

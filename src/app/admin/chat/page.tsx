@@ -18,7 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useChatThreads, useAllUsers, useAdminUser } from '@/hooks/use-data';
+import { useChatThreads, useAllUsers } from '@/hooks/use-data';
+import { useAdminUser } from '@/hooks/use-auth';
 
 const chatSchema = z.object({
   message: z.string().min(1, "Message cannot be empty."),
@@ -74,7 +75,7 @@ function ChatPanel() {
 
     const sortedThreads = useMemo(() => {
         if (!chatThreads) return [];
-        return [...chatThreads].sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+        return [...chatThreads].sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
     }, [chatThreads]);
 
     useEffect(() => {

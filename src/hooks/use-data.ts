@@ -136,7 +136,7 @@ export const useResults = () => {
         data, 
         isLoading, 
         error, 
-        updateResult
+        updateItem: updateResult
     };
 };
 

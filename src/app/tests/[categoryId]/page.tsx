@@ -11,11 +11,12 @@ import { type Test, type Result, type Category } from '@/lib/types';
 import { Clock, ListChecks, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTests, useCategories, useResults, useUser } from '@/hooks/use-data';
+import { useTests, useCategories, useResults } from '@/hooks/use-data';
+import { useUser } from '@/hooks/use-auth';
 
 
 function TestList({ categoryId }: { categoryId: string }) {
-    const user = useUser();
+    const {data: user} = useUser();
     const { data: tests, isLoading: isLoadingTests } = useTests();
     const { data: categories, isLoading: isLoadingCategories } = useCategories();
     const { data: results, isLoading: isLoadingResults } = useResults();

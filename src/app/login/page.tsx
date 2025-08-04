@@ -2,8 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { useUser } from '@/hooks/use-data';
+import { useAuth, useUser } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,42 +17,42 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, loading } = useAuth();
-  const user = useUser();
+  const { login, loading: authLoading } = useAuth();
+  const { data: user, isLoading: userLoading } = useUser();
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!authLoading && !userLoading && user) {
       if (user.role === 'admin') {
         router.push('/admin');
       } else {
         router.push('/dashboard');
       }
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, userLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const { success, message } = await login(email, password);
-    if (success) {
+    const result = await login(email, password);
+    if (result.success) {
       toast({
         title: 'Login Successful!',
         description: 'Redirecting to your dashboard...',
       });
-      // The useEffect will handle redirection
+      // The useEffect will handle redirection after the user state is updated
     } else {
       toast({
         title: 'Login Failed',
-        description: message,
+        description: result.message,
         variant: 'destructive',
       });
       setIsSubmitting(false);
     }
   };
   
-  if (loading || user) {
+  if (authLoading || userLoading || user) {
     return (
       <div className="flex min-h-[80vh] items-center justify-center">
         <div className="w-full max-w-md space-y-4">

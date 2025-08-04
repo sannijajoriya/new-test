@@ -4,14 +4,14 @@
 import React from 'react';
 import { AuthGuard } from '@/components/auth-guard';
 import { AdminSidebar } from '@/components/admin-sidebar';
-import { useUser } from '@/hooks/use-data';
+import { useUser } from '@/hooks/use-auth';
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = useUser();
+  const { data: user } = useUser();
 
   return (
     <AuthGuard role="admin">

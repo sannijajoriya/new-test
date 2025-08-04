@@ -1,11 +1,10 @@
 
 "use client";
 
-import { useData } from '@/hooks/use-data';
+import { useAuth, useUser } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader } from './loader';
-import { useAuth } from '@/hooks/use-auth';
 
 interface AuthGuardProps {
     children: React.ReactNode;
@@ -14,7 +13,7 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children, role }: AuthGuardProps) {
   const { authUser, loading: authLoading } = useAuth();
-  const { user, isLoading: dataLoading } = useData();
+  const { data: user, isLoading: dataLoading } = useUser();
   const router = useRouter();
 
   const isLoading = authLoading || dataLoading;
