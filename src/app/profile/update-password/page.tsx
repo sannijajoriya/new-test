@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { KeyRound, LoaderCircle } from 'lucide-react';
-import { getSupabaseClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/use-auth";
@@ -32,7 +32,6 @@ function UpdatePasswordForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAuthCode, setHasAuthCode] = useState(false);
-  const supabase = getSupabaseClient();
 
   // Check for session recovery from email link
   useEffect(() => {
