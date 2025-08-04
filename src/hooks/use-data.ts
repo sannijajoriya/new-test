@@ -234,9 +234,7 @@ export const useFeedbacks = () => {
 };
 
 export const useSiteSettings = () => {
-    const { data, error, isLoading, mutate } = useSWR<SiteSettings | null>('siteSettings', fetcher, {
-        fallbackData: defaultSiteSettings
-    });
+    const { data, error, isLoading, mutate } = useSWR<SiteSettings | null>('siteSettings', fetcher);
     
     const settings = data ? { ...defaultSiteSettings, ...data } : defaultSiteSettings;
 
