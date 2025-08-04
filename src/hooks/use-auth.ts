@@ -81,8 +81,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setAppLoading(true);
     try {
       await createUser(fullName, email, password);
-      // This is a custom auth flow, so we don't expect Supabase to send a verification email.
-      // The user can log in directly.
       return { success: true, message: 'Signup successful! You can now log in.' };
     } catch (e: any) {
         return { success: false, message: e.message || "An unexpected error occurred during signup." };
@@ -134,7 +132,7 @@ export const useAuth = () => {
 
 export const useUser = () => {
     const { authUser, loading: authLoading } = useAuth();
-    const { data: allUsers, isLoading: usersLoading } = useSWR(authUser ? 'allUsers' : null, fetchAllUsers);
+    const { data: allUsers, isLoading: usersLoading } = useSWR<User[]>(authUser ? 'allUsers' : null, fetchAllUsers);
 
     const user = useMemo(() => {
         if (!authUser || !allUsers) return null;
@@ -145,7 +143,7 @@ export const useUser = () => {
 };
 
 export const useAdminUser = () => {
-    const { data: allUsers, isLoading } = useSWR('allUsers', fetchAllUsers);
+    const { data: allUsers, isLoading } = useSWR<User[]>('allUsers', fetchAllUsers);
     const adminUser = React.useMemo(() => allUsers?.find(u => u.role === 'admin'), [allUsers]);
     return { adminUser, isLoading };
 };

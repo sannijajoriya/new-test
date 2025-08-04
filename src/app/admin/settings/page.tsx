@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { BrainCircuit, Edit, ImagePlus, Newspaper, Save, Settings, Trash2, LayoutTemplate, MessageSquare } from 'lucide-react';
 import type { SarthiBotTrainingData, SarthiBotConversation } from '@/lib/types';
