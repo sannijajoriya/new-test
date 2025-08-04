@@ -15,7 +15,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Label } from "@/components/ui/label";
 import type { Feedback } from "@/lib/types";
 import { ImageUploader } from "@/components/image-uploader";
-import { useFeedbacks, useUser } from "@/hooks/use-data";
+import { useFeedbacks } from "@/hooks/use-data";
+import { useUser } from "@/hooks/use-auth";
 
 const feedbackSchema = z.object({
   city: z.string().min(2, { message: "City must be at least 2 characters long." }),
@@ -26,7 +27,7 @@ const feedbackSchema = z.object({
 type FeedbackFormData = z.infer<typeof feedbackSchema>;
 
 function FeedbackForm() {
-  const user = useUser();
+  const { data: user } = useUser();
   const { toast } = useToast();
   const router = useRouter();
   const { data: feedbacks, updateFeedbacks } = useFeedbacks();

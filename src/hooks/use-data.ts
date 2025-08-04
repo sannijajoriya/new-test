@@ -1,31 +1,27 @@
 
-'use client';
+"use client";
 
-import React, { createContext, useContext, useMemo, useCallback } from 'react';
+import React from 'react';
 import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainingData, SarthiBotConversation, Feedback, SiteSettings } from '@/lib/types';
-import { useAuth } from './use-auth';
-import useSWR from 'swr';
-import {
-    fetchTests, fetchCategories, fetchAllUsers, fetchResults, fetchReports,
-    fetchChatThreads, fetchSarthiBotTrainingData, fetchSarthiBotConversations,
-    fetchStudentFeedbacks, fetchSiteSettings
-} from '@/actions/data-actions';
-import { upsertTest, removeTest } from '@/actions/data-actions';
-import { upsertCategory, removeCategory } from '@/actions/data-actions';
-import { upsertUser, removeStudent } from '@/actions/data-actions';
-import { upsertResult } from '@/actions/data-actions';
-import { upsertReport } from '@/actions/data-actions';
-import { upsertChatThread, removeChatThread } from '@/actions/data-actions';
-import { saveSarthiBotTrainingData, upsertSarthiBotConversation, removeSarthiBotConversation } from '@/actions/data-actions';
-import { saveFeedbacks } from '@/actions/data-actions';
-import { upsertSiteSettings } from '@/actions/data-actions';
+import useSWR, { mutate } from 'swr';
+import * as DataActions from '@/actions/data-actions';
 
-
-interface DataContextType {
-    user: User | null;
-    isLoading: boolean;
-}
-const DataContext = createContext<DataContextType | null>(null);
+// SWR fetcher for all data types
+const fetcher = async (key: string) => {
+    switch (key) {
+        case 'tests': return DataActions.fetchTests();
+        case 'categories': return DataActions.fetchCategories();
+        case 'allUsers': return DataActions.fetchAllUsers();
+        case 'results': return DataActions.fetchResults();
+        case 'reports': return DataActions.fetchReports();
+        case 'chatThreads': return DataActions.fetchChatThreads();
+        case 'sarthiBotTrainingData': return DataActions.fetchSarthiBotTrainingData();
+        case 'sarthiBotConversations': return DataActions.fetchSarthiBotConversations();
+        case 'feedbacks': return DataActions.fetchStudentFeedbacks();
+        case 'siteSettings': return DataActions.fetchSiteSettings();
+        default: throw new Error(`Unknown SWR key: ${key}`);
+    }
+};
 
 const defaultSiteSettings: SiteSettings = {
     id: 'default', logoUrl: '/logo.png', botName: 'UdaanSarthi Bot', botAvatarUrl: '',
@@ -38,225 +34,217 @@ const defaultSiteSettings: SiteSettings = {
 };
 
 
-export const DataProvider = ({ children }: { children: React.ReactNode }) => {
-    const { authUser, loading: authLoading } = useAuth();
-    const { data: allUsers, isLoading: usersLoading } = useSWR(authUser ? 'allUsers' : null, fetchAllUsers);
-    
-    const user = useMemo(() => {
-        if (!authUser || !allUsers) return null;
-        return allUsers.find(u => u.id === authUser.id) || null;
-    }, [authUser, allUsers]);
-
-    const isLoading = authLoading || usersLoading;
-
-    const value = useMemo(() => ({
-        user,
-        isLoading,
-    }), [user, isLoading]);
-
-    return React.createElement(DataContext.Provider, { value }, children);
-};
-
-
-// Custom Hooks for each data type
-export const useData = () => {
-    const context = useContext(DataContext);
-    if (!context) throw new Error('useData must be used within a DataProvider.');
-    return context;
-};
-
-export const useUser = () => useData().user;
-
 export const useTests = () => {
-    const { data, error, isLoading, mutate } = useSWR<Test[]>('tests', fetchTests);
+    const { data, error, isLoading, mutate } = useSWR<Test[]>('tests', fetcher);
+    const updateTest = React.useCallback(async (test: Test) => {
+        const optimisticData = data?.map(t => t.id === test.id ? test : t) || [test];
+        if (!data?.some(t => t.id === test.id)) {
+            optimisticData.push(test);
+        }
+        await mutate(DataActions.upsertTest(test), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
+    const deleteTest = React.useCallback(async (id: string) => {
+        const optimisticData = data?.filter(t => t.id !== id) || [];
+        await mutate(DataActions.removeTest(id), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
     return { 
         data, 
         isLoading, 
         error, 
-        mutate, 
-        updateTest: async (test: Test) => {
-            const optimisticData = data?.map(t => t.id === test.id ? test : t) || [test];
-             if (!data?.some(t => t.id === test.id)) {
-                optimisticData.push(test);
-            }
-            await mutate(upsertTest(test), { optimisticData, revalidate: false });
-        },
-        deleteTest: async (id: string) => {
-            const optimisticData = data?.filter(t => t.id !== id) || [];
-            await mutate(removeTest(id), { optimisticData, revalidate: false });
-        }
+        mutate,
+        updateTest,
+        deleteTest
     };
 };
 
 export const useCategories = () => {
-    const { data, error, isLoading, mutate } = useSWR<Category[]>('categories', fetchCategories);
+    const { data, error, isLoading, mutate } = useSWR<Category[]>('categories', fetcher);
+    const updateCategory = React.useCallback(async (category: Category) => {
+        const optimisticData = data?.map(c => c.id === category.id ? category : c) || [category];
+        if (!data?.some(c => c.id === category.id)) {
+            optimisticData.push(category);
+        }
+        await mutate(DataActions.upsertCategory(category), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
+    const deleteCategory = React.useCallback(async (id: string, deleteTests: boolean) => {
+        const optimisticData = data?.filter(c => c.id !== id) || [];
+        await mutate(DataActions.removeCategory(id, deleteTests), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
     return {
         data,
         isLoading,
         error,
         mutate,
-        updateCategory: async (category: Category) => {
-            const optimisticData = data?.map(c => c.id === category.id ? category : c) || [category];
-            if (!data?.some(c => c.id === category.id)) {
-                optimisticData.push(category);
-            }
-            await mutate(upsertCategory(category), { optimisticData, revalidate: false });
-        },
-        deleteCategory: async (id: string, deleteTests: boolean) => {
-             const optimisticData = data?.filter(c => c.id !== id) || [];
-             await mutate(removeCategory(id, deleteTests), { optimisticData, revalidate: false });
-        }
+        updateCategory,
+        deleteCategory,
     };
 };
 
 export const useAllUsers = () => {
-    const { data, isLoading, mutate } = useSWR<User[]>('allUsers', fetchAllUsers);
-     return {
+    const { data, isLoading, mutate } = useSWR<User[]>('allUsers', fetcher);
+    const updateUser = React.useCallback(async (id: string, userData: Partial<User>) => {
+        const optimisticData = data?.map(u => u.id === id ? { ...u, ...userData } : u) || [];
+        await mutate(DataActions.upsertUser({ id, ...userData }), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
+    const deleteStudent = React.useCallback(async (id: string) => {
+        const optimisticData = data?.filter(u => u.id !== id);
+        await mutate(DataActions.removeStudent(id), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
+    return {
         allUsers: data,
         isLoading,
-        updateUser: async (id: string, userData: Partial<User>) => {
-            const optimisticData = data?.map(u => u.id === id ? { ...u, ...userData } : u) || [];
-            await mutate(upsertUser({ id, ...userData }), { optimisticData, revalidate: false });
-        },
-        deleteStudent: async (id: string) => {
-            const optimisticData = data?.filter(u => u.id !== id);
-            await mutate(removeStudent(id), { optimisticData, revalidate: false });
-        },
+        updateUser,
+        deleteStudent,
         mutate
     };
 };
 
 export const useStudents = () => {
-    const { data, isLoading, mutate } = useSWR('students', async () => {
-        const users = await fetchAllUsers();
-        return users.filter(u => u.role === 'student');
-    });
+    const { allUsers, isLoading, deleteStudent: deleteUserAction } = useAllUsers();
+    
+    const students = React.useMemo(() => allUsers?.filter(u => u.role === 'student'), [allUsers]);
+
+    const deleteStudent = React.useCallback(async (id: string) => {
+        await deleteUserAction(id);
+    }, [deleteUserAction]);
+
     return { 
-        students: data, 
-        isLoading,
-        deleteStudent: async (id: string) => {
-            const optimisticData = data?.filter(u => u.id !== id);
-            await mutate(removeStudent(id), { optimisticData, revalidate: false });
-        }
+        students, 
+        isLoading: isLoading,
+        deleteStudent
     };
 };
 
-export const useAdminUser = () => {
-    const { data, isLoading } = useSWR('adminUser', async () => {
-        const users = await fetchAllUsers();
-        return users.find(u => u.role === 'admin');
-    });
-    return { adminUser: data, isLoading };
-};
 
 export const useResults = () => {
-    const { data, error, isLoading, mutate } = useSWR<Result[]>('results', fetchResults);
+    const { data, error, isLoading, mutate } = useSWR<Result[]>('results', fetcher);
+    const updateResult = React.useCallback(async (result: Result) => {
+        const optimisticData = data?.map(r => r.id === result.id ? result : r) || [result];
+        if (!data?.some(r => r.id === result.id)) {
+            optimisticData.push(result);
+        }
+        await mutate(DataActions.upsertResult(result), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
     return { 
         data, 
         isLoading, 
         error, 
-        updateResult: async (result: Result) => {
-            const optimisticData = data?.map(r => r.id === result.id ? result : r) || [result];
-             if (!data?.some(r => r.id === result.id)) {
-                optimisticData.push(result);
-            }
-            await mutate(upsertResult(result), { optimisticData, revalidate: false });
-        }
+        updateResult
     };
 };
 
 export const useReports = () => {
-    const { data, error, isLoading, mutate } = useSWR<Report[]>('reports', fetchReports);
+    const { data, error, isLoading, mutate } = useSWR<Report[]>('reports', fetcher);
+    const updateItem = React.useCallback(async (report: Report) => {
+        const optimisticData = data?.map(r => r.id === report.id ? report : r) || [report];
+        if (!data?.some(r => r.id === report.id)) {
+            optimisticData.push(report);
+        }
+        await mutate(DataActions.upsertReport(report), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+    
     return { 
         data, 
         isLoading, 
         error, 
-        updateItem: async (report: Report) => {
-             const optimisticData = data?.map(r => r.id === report.id ? report : r) || [report];
-             if (!data?.some(r => r.id === report.id)) {
-                optimisticData.push(report);
-            }
-            await mutate(upsertReport(report), { optimisticData, revalidate: false });
-        }
+        updateItem
     };
 };
 
 export const useChatThreads = () => {
-    const { data, error, isLoading, mutate } = useSWR<ChatThread[]>('chatThreads', fetchChatThreads);
+    const { data, error, isLoading, mutate } = useSWR<ChatThread[]>('chatThreads', fetcher);
+
+    const updateItem = React.useCallback(async (thread: ChatThread) => {
+        const optimisticData = data?.map(t => t.id === thread.id ? thread : t) || [thread];
+        if (!data?.some(t => t.id === thread.id)) {
+            optimisticData.push(thread);
+        }
+        await mutate(DataActions.upsertChatThread(thread), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
+    const deleteItem = React.useCallback(async (id: string) => {
+        const optimisticData = data?.filter(t => t.id !== id);
+        await mutate(DataActions.removeChatThread(id), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+    
     return {
         data,
         isLoading,
         error,
-        updateItem: async (thread: ChatThread) => {
-            const optimisticData = data?.map(t => t.id === thread.id ? thread : t) || [thread];
-             if (!data?.some(t => t.id === thread.id)) {
-                optimisticData.push(thread);
-            }
-            await mutate(upsertChatThread(thread), { optimisticData, revalidate: false });
-        },
-        deleteItem: async (id: string) => {
-            const optimisticData = data?.filter(t => t.id !== id);
-            await mutate(removeChatThread(id), { optimisticData, revalidate: false });
-        }
+        updateItem,
+        deleteItem
     };
 };
 
 export const useSarthiBotTrainingData = () => {
-    const { data, error, isLoading, mutate } = useSWR<SarthiBotTrainingData[]>('sarthiBotTrainingData', fetchSarthiBotTrainingData);
+    const { data, error, isLoading, mutate } = useSWR<SarthiBotTrainingData[]>('sarthiBotTrainingData', fetcher);
+    const updateSarthiBotTrainingData = React.useCallback(async (trainingData: SarthiBotTrainingData[]) => {
+        await mutate(DataActions.saveSarthiBotTrainingData(trainingData), { optimisticData: trainingData, revalidate: false });
+    }, [mutate]);
     return { 
         trainingData: data, 
         isLoading, 
         error, 
-        updateSarthiBotTrainingData: async (trainingData: SarthiBotTrainingData[]) => {
-            await mutate(saveSarthiBotTrainingData(trainingData), { optimisticData: trainingData, revalidate: false });
-        }
+        updateSarthiBotTrainingData
     };
 };
 
 export const useSarthiBotConversations = () => {
-    const { data, error, isLoading, mutate } = useSWR<SarthiBotConversation[]>('sarthiBotConversations', fetchSarthiBotConversations);
+    const { data, error, isLoading, mutate } = useSWR<SarthiBotConversation[]>('sarthiBotConversations', fetcher);
+    const updateSarthiBotConversation = React.useCallback(async (conversation: SarthiBotConversation) => {
+        const optimisticData = data?.map(c => c.id === conversation.id ? conversation : c) || [conversation];
+        if (!data?.some(c => c.id === conversation.id)) {
+            optimisticData.push(conversation);
+        }
+        await mutate(DataActions.upsertSarthiBotConversation(conversation), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
+    const deleteSarthiBotConversation = React.useCallback(async (id: string) => {
+        const optimisticData = data?.filter(c => c.id !== id);
+        await mutate(DataActions.removeSarthiBotConversation(id), { optimisticData, revalidate: false });
+    }, [data, mutate]);
+
      return {
         conversations: data,
         isLoading,
         error,
-        updateSarthiBotConversation: async (conversation: SarthiBotConversation) => {
-            const optimisticData = data?.map(c => c.id === conversation.id ? conversation : c) || [conversation];
-             if (!data?.some(c => c.id === conversation.id)) {
-                optimisticData.push(conversation);
-            }
-            await mutate(upsertSarthiBotConversation(conversation), { optimisticData, revalidate: false });
-        },
-        deleteSarthiBotConversation: async (id: string) => {
-            const optimisticData = data?.filter(c => c.id !== id);
-            await mutate(removeSarthiBotConversation(id), { optimisticData, revalidate: false });
-        }
+        updateSarthiBotConversation,
+        deleteSarthiBotConversation
     };
 };
 
 export const useFeedbacks = () => {
-    const { data, error, isLoading, mutate } = useSWR<Feedback[]>('feedbacks', fetchStudentFeedbacks);
+    const { data, error, isLoading, mutate } = useSWR<Feedback[]>('feedbacks', fetcher);
+    const updateFeedbacks = React.useCallback(async (feedbacks: Feedback[]) => {
+        await mutate(DataActions.saveFeedbacks(feedbacks), { optimisticData: feedbacks, revalidate: false });
+    }, [mutate]);
     return { 
         data, 
         isLoading, 
         error,
-        updateFeedbacks: async (feedbacks: Feedback[]) => {
-            await mutate(saveFeedbacks(feedbacks), { optimisticData: feedbacks, revalidate: false });
-        }
+        updateFeedbacks
     };
 };
 
 export const useSiteSettings = () => {
-    const { data, error, isLoading, mutate } = useSWR<SiteSettings | null>('siteSettings', fetchSiteSettings, {
+    const { data, error, isLoading, mutate } = useSWR<SiteSettings | null>('siteSettings', fetcher, {
         fallbackData: defaultSiteSettings
     });
     
     const settings = data ? { ...defaultSiteSettings, ...data } : defaultSiteSettings;
 
-    const updateSettings = async (newSettings: Partial<SiteSettings>) => {
+    const updateSettings = React.useCallback(async (newSettings: Partial<SiteSettings>) => {
         const optimisticData = { ...settings, ...newSettings };
         const options = { optimisticData, revalidate: false };
-        await mutate(upsertSiteSettings(newSettings), options as any);
-    };
+        await mutate(DataActions.upsertSiteSettings(newSettings), options as any);
+    }, [settings, mutate]);
 
     return { settings, isLoading, error, updateSettings };
 };

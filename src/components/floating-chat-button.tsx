@@ -3,7 +3,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import { useSiteSettings, useAllUsers, useUser } from "@/hooks/use-data";
+import { useSiteSettings, useAllUsers } from "@/hooks/use-data";
+import { useUser, useAdminUser } from "@/hooks/use-auth";
 import Image from "next/image";
 import { StudentChatPanel } from "./student-chat-panel";
 import { useState, useEffect } from "react";
@@ -12,13 +13,12 @@ import { MessageSquare, BrainCircuit, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 export function FloatingChatButton() {
-    const user = useUser();
+    const {data: user} = useUser();
     const { settings } = useSiteSettings();
-    const { allUsers } = useAllUsers();
+    const { adminUser } = useAdminUser();
     const [isOpen, setIsOpen] = useState(false);
     const [activeView, setActiveView] = useState<'list' | 'bot' | 'admin'>('list');
     
-    const adminUser = allUsers?.find(u => u.role === 'admin');
 
     useEffect(() => {
         if (!isOpen) {

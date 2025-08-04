@@ -18,7 +18,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { useSiteSettings, useSarthiBotTrainingData, useSarthiBotConversations, useAllUsers, useUser } from '@/hooks/use-data';
+import { useSiteSettings, useSarthiBotTrainingData, useSarthiBotConversations, useAllUsers } from '@/hooks/use-data';
+import { useUser } from '@/hooks/use-auth';
 import { ImageUploader } from '@/components/image-uploader';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,7 +37,7 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 function AdminProfileManager() {
-    const user = useUser();
+    const {data: user} = useUser();
     const { updateUser } = useAllUsers();
     const { toast } = useToast();
 

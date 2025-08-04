@@ -17,7 +17,8 @@ import { cn, useFormattedTimestamp } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { FullScreenImageViewer } from './full-screen-image-viewer';
-import { useSiteSettings, useChatThreads, useAdminUser, useUser } from '@/hooks/use-data';
+import { useSiteSettings, useChatThreads } from '@/hooks/use-data';
+import { useUser, useAdminUser } from '@/hooks/use-auth';
 import { Skeleton } from './ui/skeleton';
 
 const chatSchema = z.object({

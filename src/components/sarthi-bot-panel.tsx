@@ -17,7 +17,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { askSarthiBot } from '@/ai/flows/sarthi-bot-flow';
 import Image from 'next/image';
-import { useSiteSettings, useSarthiBotTrainingData, useSarthiBotConversations, useUser } from '@/hooks/use-data';
+import { useSiteSettings, useSarthiBotTrainingData, useSarthiBotConversations } from '@/hooks/use-data';
+import { useUser } from '@/hooks/use-auth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { FullScreenImageViewer } from './full-screen-image-viewer';
 
@@ -42,7 +43,7 @@ function TypingIndicator({ avatarUrl }: { avatarUrl?: string }) {
 }
 
 export function SarthiBotPanel({ className, showHeader = true }: { className?: string; showHeader?: boolean; }) {
-    const user = useUser();
+    const { data: user } = useUser();
     const { settings } = useSiteSettings();
     const { trainingData } = useSarthiBotTrainingData();
     const { conversations, updateSarthiBotConversation, deleteSarthiBotConversation } = useSarthiBotConversations();
