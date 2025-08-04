@@ -114,10 +114,11 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
                 text: settings.adminChatAutoReply || "Thanks for your message. We will get back to you soon.",
                 timestamp: Date.now() + 1000, // a bit later to feel more natural
             };
-
+            
+            const currentThread = chatThreads?.find(t => t.studentId === user.id);
             let updatedThread;
 
-            if (!thread) {
+            if (!currentThread) {
                 // This is the first message from this user, create a new thread
                 updatedThread = {
                     id: user.id,
@@ -130,8 +131,8 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
             } else {
                 // Thread exists, add the new message and the auto-reply
                 updatedThread = {
-                    ...thread,
-                    messages: [...thread.messages, newMessage, autoReply],
+                    ...currentThread,
+                    messages: [...currentThread.messages, newMessage, autoReply],
                     lastMessageAt: autoReply.timestamp,
                     seenByAdmin: false,
                 };

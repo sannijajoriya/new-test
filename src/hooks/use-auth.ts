@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, createContext, useContext, use
 import { useRouter } from 'next/navigation';
 import { useLoading } from './use-loading';
 import { upsertUser, createUser, verifyPassword, fetchAllUsers } from '@/actions/data-actions';
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import type { User } from '@/lib/types';
 
 
@@ -57,6 +57,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     setLoading(false);
   }, []);
+  
+   // This effect re-fetches user data when the authUser changes (e.g., on login).
+  useEffect(() => {
+    if (authUser) {
+        mutate('allUsers');
+    }
+  }, [authUser]);
 
 
   const login = async (email: string, password: string) => {
@@ -132,12 +139,9 @@ export const useAuth = () => {
 
 export const useUser = () => {
     const { authUser, loading: authLoading } = useAuth();
-    const { data: allUsers, isLoading: usersLoading } = useSWR<User[]>(authUser ? 'allUsers' : null, fetchAllUsers);
-
-    const user = useMemo(() => {
-        if (!authUser || !allUsers) return null;
-        return allUsers.find(u => u.id === authUser.id) || null;
-    }, [authUser, allUsers]);
+    const { data: allUsers, isLoading: usersLoading } = useSWR<User[]>('allUsers', fetchAllUsers);
+    
+    const user = allUsers?.find(u => u.id === authUser?.id) || null;
 
     return { data: user, isLoading: authLoading || usersLoading };
 };

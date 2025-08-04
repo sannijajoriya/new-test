@@ -374,28 +374,30 @@ function SarthiBotManager() {
                     <DialogHeader>
                         <DialogTitle>Conversation with {viewingConversation?.studentName}</DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className="h-96 border rounded-md p-4">
-                         <div className="space-y-4">
-                            {viewingConversation?.messages.map((msg, index) => (
-                                <div key={index} className={cn("flex items-end gap-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
-                                    {msg.role === 'bot' && (
-                                         <Avatar className="h-8 w-8 self-start">
-                                            {settings?.botAvatarUrl ? <AvatarImage src={settings.botAvatarUrl} alt="Bot Avatar" /> : <AvatarFallback><BrainCircuit /></AvatarFallback>}
-                                        </Avatar>
-                                    )}
-                                    <div className={cn(
-                                        "max-w-sm rounded-2xl px-3 py-2 whitespace-pre-wrap shadow-md",
-                                        msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"
-                                    )}>
-                                        {msg.image && (
-                                             <Image src={msg.image} width={200} height={200} alt="User upload" className="rounded-md mb-2" />
+                    {viewingConversation && (
+                        <ScrollArea className="h-96 border rounded-md p-4">
+                            <div className="space-y-4">
+                                {viewingConversation.messages.map((msg, index) => (
+                                    <div key={index} className={cn("flex items-end gap-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                                        {msg.role === 'bot' && (
+                                            <Avatar className="h-8 w-8 self-start">
+                                                {settings?.botAvatarUrl ? <AvatarImage src={settings.botAvatarUrl} alt="Bot Avatar" /> : <AvatarFallback><BrainCircuit /></AvatarFallback>}
+                                            </Avatar>
                                         )}
-                                        <p className="text-sm">{msg.text}</p>
+                                        <div className={cn(
+                                            "max-w-sm rounded-2xl px-3 py-2 whitespace-pre-wrap shadow-md",
+                                            msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"
+                                        )}>
+                                            {msg.image && (
+                                                <Image src={msg.image} width={200} height={200} alt="User upload" className="rounded-md mb-2" />
+                                            )}
+                                            <p className="text-sm">{msg.text}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                         </div>
-                    </ScrollArea>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    )}
                     <DialogFooter>
                         <DialogClose asChild><Button>Close</Button></DialogClose>
                     </DialogFooter>
