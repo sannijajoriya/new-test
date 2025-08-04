@@ -1,33 +1,30 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { type Test, type Question as QuestionType, type Result, type Report, type User, type ChatMessage } from '@/lib/types';
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { type Test, type Question as QuestionType, type Result, type User, type Report, type ChatMessage } from '@/lib/types';
+import { useReports, useAllUsers, useTests, useResults } from '@/hooks/use-data';
+import { useUser } from '@/hooks/use-auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Trophy, CheckCircle, Clock, Lightbulb, XCircle, FileDown, MinusCircle, Flag } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { cn, useFormattedTimestamp } from '@/lib/utils';
+import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Flag, Library, Clock, ListChecks, Hash, Edit } from 'lucide-react';
-import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTests, useCategories, useResults, useReports } from '@/hooks/use-data';
-import { useUser } from '@/hooks/use-auth';
-import { Badge } from '@/components/ui/badge';
+
 
 const reportSchema = z.object({
   reason: z.string().min(1, "Please select a reason."),
@@ -35,51 +32,7 @@ const reportSchema = z.object({
 });
 type ReportFormData = z.infer<typeof reportSchema>;
 
-function TestSummary({ test, categoryName }: { test: Test, categoryName: string }) {
-    const { questions, duration, marksPerCorrect } = test;
-    const maxScore = questions.length * (marksPerCorrect || 1);
-
-    return (
-        <Card className="mb-6">
-            <CardHeader>
-                <CardTitle className="text-2xl">{test.title}</CardTitle>
-                <CardDescription>Review the test details below.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-                    <Library className="h-5 w-5 mt-1 text-primary" />
-                    <div>
-                        <p className="text-muted-foreground">Category</p>
-                        <p className="font-semibold">{categoryName}</p>
-                    </div>
-                </div>
-                 <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-                    <ListChecks className="h-5 w-5 mt-1 text-primary" />
-                    <div>
-                        <p className="text-muted-foreground">Questions</p>
-                        <p className="font-semibold">{questions.length}</p>
-                    </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-                    <Clock className="h-5 w-5 mt-1 text-primary" />
-                    <div>
-                        <p className="text-muted-foreground">Duration</p>
-                        <p className="font-semibold">{duration} mins</p>
-                    </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-                    <Hash className="h-5 w-5 mt-1 text-primary" />
-                    <div>
-                        <p className="text-muted-foreground">Max Marks</p>
-                        <p className="font-semibold">{maxScore}</p>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
-function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onUpdateReport }: { isOpen: boolean; onClose: () => void; question: QuestionType | null; test: Test | null; user: User | null; onUpdateReport: (report: Report) => void; }) {
+function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onSubmit }: { isOpen: boolean; onClose: () => void; question: QuestionType | null; test: Test | null; user: User | null, onSubmit: (report: Report) => void }) {
     const { toast } = useToast();
     const form = useForm<ReportFormData>({
         resolver: zodResolver(reportSchema),
@@ -98,7 +51,7 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onUpdateR
         try {
             const chatMessage: ChatMessage = {
                 sender: 'student',
-                message: `Reason: ${data.reason}\\nRemarks: ${data.remarks || 'N/A'}`,
+                message: `Reason: ${data.reason}\nRemarks: ${data.remarks || 'N/A'}`,
                 timestamp: Date.now(),
             };
 
@@ -117,7 +70,7 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onUpdateR
                 createdAt: new Date(),
             };
 
-            onUpdateReport(newReport);
+            onSubmit(newReport);
             toast({ title: "Objection Raised", description: "Your objection has been submitted to the admin." });
             onClose();
         } catch (error) {
@@ -183,476 +136,357 @@ function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onUpdateR
     );
 }
 
-const QuestionPalette = ({
-  questions,
-  currentQuestionIndex,
-  answers,
-  onQuestionSelect,
-  isPreview = false
-}: {
-  questions: QuestionType[];
-  currentQuestionIndex: number;
-  answers: Record<string, string>;
-  onQuestionSelect: (index: number) => void;
-  isPreview?: boolean;
-}) => {
-  return (
-    <div className="hidden md:block w-64">
-      <Card>
-        <CardHeader>
-          <CardTitle>Questions</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <ScrollArea className="h-96">
-                <div className="grid grid-cols-5 gap-2">
-                    {questions.map((q, index) => (
-                    <Button
-                        key={q.id}
-                        variant={currentQuestionIndex === index ? 'default' : (isPreview ? 'secondary' : (answers[q.id] ? 'secondary' : 'outline'))}
-                        className={cn(
-                            "h-10 w-10 p-0",
-                            !isPreview && answers[q.id] && answers[q.id] !== 'Not Attempted' && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100",
-                            !isPreview && answers[q.id] === 'Not Attempted' && "bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-100",
-                            currentQuestionIndex === index && "ring-2 ring-primary-foreground ring-offset-2"
-                        )}
-                        onClick={() => onQuestionSelect(index)}
-                    >
-                        {index + 1}
-                    </Button>
-                    ))}
-                </div>
-            </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-const MobileQuestionPalette = ({
-  questions,
-  currentQuestionIndex,
-  answers,
-  onQuestionSelect,
-  isPreview = false
-}: {
-  questions: QuestionType[];
-  currentQuestionIndex: number;
-  answers: Record<string, string>;
-  onQuestionSelect: (index: number) => void;
-  isPreview?: boolean;
-}) => {
-    return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-2 z-50">
-            <ScrollArea className="w-full whitespace-nowrap">
-                <div className="flex gap-2 pb-2">
-                    {questions.map((q, index) => (
-                    <Button
-                        key={q.id}
-                        size="icon"
-                        variant={currentQuestionIndex === index ? 'default' : (isPreview ? 'secondary' : (answers[q.id] ? 'secondary' : 'outline'))}
-                        className={cn(
-                            "h-9 w-9 p-0 flex-shrink-0",
-                             !isPreview && answers[q.id] && answers[q.id] !== 'Not Attempted' && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100",
-                             !isPreview && answers[q.id] === 'Not Attempted' && "bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-100",
-                            currentQuestionIndex === index && "ring-2 ring-primary-foreground ring-offset-2"
-                        )}
-                        onClick={() => onQuestionSelect(index)}
-                    >
-                        {index + 1}
-                    </Button>
-                    ))}
-                </div>
-            </ScrollArea>
-        </div>
-    )
+interface RankedResult extends Result {
+  rank: number;
+  userFullName: string;
 }
 
-function GuidelinesScreen({ test, categoryName, onStartTest }: { test: Test, categoryName: string, onStartTest: () => void }) {
+function LoadingSkeleton() {
     return (
-        <div className="w-full max-w-3xl mx-auto">
-            <TestSummary test={test} categoryName={categoryName} />
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-xl">Guidelines</CardTitle>
-                    <CardDescription>Please read the guidelines carefully before starting.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="p-4 bg-muted/50 rounded-md prose prose-sm dark:prose-invert max-w-none">
-                        <p className="whitespace-pre-line">{test.guidelines || 'No specific guidelines provided for this test.'}</p>
-                    </div>
-                     <div className="p-4 border-l-4 border-destructive bg-destructive/10 rounded-md">
-                        <h4 className="font-bold text-destructive">Important Scoring Note</h4>
-                        <p className="text-sm text-destructive/80 mt-1">
-                            Any question that is left unanswered (i.e., no option selected) will be treated as incorrect and will incur negative marks if applicable. To skip a question without penalty, you must select the "Not Attempted" option.
-                        </p>
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button onClick={onStartTest} className="w-full">
-                        I am ready to start the test
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
-    );
-}
-
-function ActiveTestUI({
-    test,
-    user,
-    currentQuestionIndex,
-    setCurrentQuestionIndex,
-    answers,
-    setAnswers,
-    timeLeft,
-    onSubmit,
-    isPreview = false
-}: {
-    test: Test;
-    user: User;
-    currentQuestionIndex: number;
-    setCurrentQuestionIndex: (index: number | ((prev: number) => number)) => void;
-    answers: Record<string, string>;
-    setAnswers: (answers: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void;
-    timeLeft: number | null;
-    onSubmit: () => void;
-    isPreview?: boolean;
-}) {
-    const [showSubmitConfirmDialog, setShowSubmitConfirmDialog] = useState(false);
-    const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
-    const [questionToReport, setQuestionToReport] = useState<QuestionType | null>(null);
-    const { updateItem: updateReport } = useReports();
-
-    const currentQuestion: QuestionType = test.questions[currentQuestionIndex];
-
-    const handleSelectOption = (option: string) => {
-        setAnswers(prev => ({ ...prev, [currentQuestion.id]: option }));
-    };
-
-    const minutes = timeLeft !== null ? Math.floor(timeLeft / 60) : 0;
-    const seconds = timeLeft !== null ? timeLeft % 60 : 0;
-    const progress = timeLeft !== null ? ((test.duration * 60 - timeLeft) / (test.duration * 60)) * 100 : 0;
-
-    return (
-        <>
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-                <div className="flex-1 w-full">
-                    <Card className="w-full">
-                        <CardHeader>
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <CardTitle className="text-2xl">{test.title}</CardTitle>
-                                    <CardDescription>Question {currentQuestionIndex + 1} of {test.questions.length}</CardDescription>
-                                </div>
-                                {!isPreview && timeLeft !== null && (
-                                    <div className="text-right">
-                                        <div className="text-lg font-semibold tabular-nums text-destructive">{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</div>
-                                        <div className="text-sm text-muted-foreground">Time Left</div>
-                                    </div>
-                                )}
-                                {isPreview && (
-                                     <Badge variant="secondary">Preview Mode</Badge>
-                                )}
-                            </div>
-                           {!isPreview && <Progress value={progress} className="w-full mt-2" />}
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6 min-h-[200px] mb-16 md:mb-0">
-                                <p className="text-lg font-medium">{currentQuestion.text}</p>
-                                {currentQuestion.imageUrl && (
-                                     <div className="relative w-full max-w-md h-64 mx-auto rounded-md overflow-hidden border">
-                                         <Image src={currentQuestion.imageUrl} alt={`Question ${currentQuestionIndex + 1} image`} layout="fill" objectFit="contain" data-ai-hint="diagram illustration" />
-                                     </div>
-                                )}
-                                <RadioGroup onValueChange={handleSelectOption} value={answers[currentQuestion.id] || ''} className="space-y-3" disabled={isPreview}>
-                                    {currentQuestion.options.map((option, index) => (
-                                        <div key={index} className="flex items-center space-x-3 p-3 rounded-md border has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors">
-                                            <RadioGroupItem value={option} id={`option-${index}`} />
-                                            <Label htmlFor={`option-${index}`} className="text-base font-normal cursor-pointer flex-1">{option}</Label>
-                                        </div>
-                                    ))}
-                                </RadioGroup>
-                                {!isPreview && (
-                                    <div className="mt-4 text-center">
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            className="text-xs text-muted-foreground h-auto p-1"
-                                            onClick={() => {
-                                                setQuestionToReport(currentQuestion);
-                                                setIsReportDialogOpen(true);
-                                            }}
-                                        >
-                                            <Flag className="mr-1 h-3 w-3" /> Raise Objection
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                        <CardFooter className="flex justify-between">
-                            <Button 
-                                variant="outline" 
-                                onClick={() => setCurrentQuestionIndex(p => p - 1)} 
-                                disabled={currentQuestionIndex === 0}
-                            >
-                                Previous
-                            </Button>
-
-                           {!isPreview && currentQuestionIndex === test.questions.length - 1 ? (
-                                <Button onClick={() => setShowSubmitConfirmDialog(true)}>Submit</Button>
-                            ) : (
-                                <Button onClick={() => setCurrentQuestionIndex(p => p + 1)} disabled={currentQuestionIndex === test.questions.length - 1}>
-                                    Next
-                                </Button>
-                            )}
-
-                             {isPreview && (
-                                <Button asChild>
-                                    <Link href="/admin/tests">Back to Tests</Link>
-                                </Button>
-                            )}
-                        </CardFooter>
-                    </Card>
-                </div>
-                
-                <QuestionPalette 
-                    questions={test.questions} 
-                    currentQuestionIndex={currentQuestionIndex} 
-                    answers={answers} 
-                    onQuestionSelect={setCurrentQuestionIndex}
-                    isPreview={isPreview}
-                />
-                
-                <MobileQuestionPalette
-                    questions={test.questions} 
-                    currentQuestionIndex={currentQuestionIndex} 
-                    answers={answers} 
-                    onQuestionSelect={setCurrentQuestionIndex}
-                    isPreview={isPreview}
-                />
+        <div className="space-y-8">
+            <div className="space-y-8 p-4 bg-background">
+                <Card>
+                    <CardHeader><Skeleton className="h-10 w-3/4 mx-auto" /></CardHeader>
+                    <CardContent className="grid md:grid-cols-3 gap-4">
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                    </CardContent>
+                    <CardFooter className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                         <Skeleton className="h-10 w-full" />
+                         <Skeleton className="h-10 w-full" />
+                         <Skeleton className="h-10 w-full" />
+                    </CardFooter>
+                </Card>
+                <Card><CardHeader><Skeleton className="h-8 w-1/2 mx-auto" /></CardHeader><CardContent><Skeleton className="h-20 w-full" /></CardContent></Card>
+                <Card><CardHeader><Skeleton className="h-8 w-1/4" /></CardHeader><CardContent><Skeleton className="h-96 w-full" /></CardContent></Card>
+                <Card><CardHeader><Skeleton className="h-8 w-1/4" /></CardHeader><CardContent><Skeleton className="h-64 w-full" /></CardContent></Card>
             </div>
-             <AlertDialog open={showSubmitConfirmDialog} onOpenChange={setShowSubmitConfirmDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        You cannot change your answers after submitting. Any unanswered questions will receive negative marks if applicable.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={onSubmit}>Submit Test</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            {user && (
-                 <RaiseObjectionDialog
-                    isOpen={isReportDialogOpen}
-                    onClose={() => setIsReportDialogOpen(false)}
-                    question={questionToReport}
-                    test={test}
-                    user={user}
-                    onUpdateReport={updateReport}
-                />
-            )}
-        </>
+             <div className='text-center space-x-4'>
+                <Skeleton className="h-12 w-36 inline-block" />
+                <Skeleton className="h-12 w-48 inline-block" />
+            </div>
+        </div>
     );
 }
 
-function TestComponent() {
+function ResultsContent() {
   const params = useParams<{ id: string }>();
   const testId = params.id;
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const adminViewedUserId = searchParams.get('userId');
+
   const { data: user, isLoading: isUserLoading } = useUser();
-  const { toast } = useToast();
-  
   const { data: tests, isLoading: isLoadingTests } = useTests();
-  const { data: categories, isLoading: isLoadingCategories } = useCategories();
-  const { data: resultsData, updateItem: updateResult, isLoading: isLoadingResults } = useResults();
+  const { data: allResults, isLoading: isLoadingResults } = useResults();
+  const { data: allUsers, isLoading: isLoadingAllUsers } = useAllUsers();
+  const { updateItem: updateReport, isLoading: isLoadingReports } = useReports();
+  
+  const isLoading = isLoadingTests || isLoadingResults || isLoadingAllUsers || isLoadingReports || isUserLoading;
+
+  const router = useRouter();
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const [test, setTest] = useState<Test | null>(null);
-  const [categoryName, setCategoryName] = useState('Uncategorized');
-  const [testState, setTestState] = useState<'loading' | 'guidelines' | 'active' | 'attempted'>('loading');
-  const [showStartConfirmDialog, setShowStartConfirmDialog] = useState(false);
+  const [currentUserResult, setCurrentUserResult] = useState<RankedResult | null>(null);
+  const [rankings, setRankings] = useState<RankedResult[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [objectionQuestion, setObjectionQuestion] = useState<QuestionType | null>(null);
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [startTime, setStartTime] = useState(0);
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  
-  const isLoading = isLoadingTests || isLoadingCategories || isLoadingResults || isUserLoading;
+  const viewingUserId = useMemo(() => {
+    if (isUserLoading) return null;
+    return (user?.role === 'admin' && adminViewedUserId) ? adminViewedUserId : user?.id;
+  }, [user, adminViewedUserId, isUserLoading]);
+
+  const pdfLibraries = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return {
+        jsPDF: () => import('jspdf'),
+        html2canvas: () => import('html2canvas'),
+      };
+    }
+    return null;
+  }, []);
 
   useEffect(() => {
-    if (!user || !testId || isLoading) return;
-    
-    const currentTest = tests?.find(t => t.id === testId);
+    if (isLoading || !viewingUserId || !testId || !tests || !allUsers || !allResults) return;
 
-    if (!currentTest) {
+    if (user?.role === 'student' && adminViewedUserId && user.id !== adminViewedUserId) {
         router.push('/dashboard');
         return;
     }
-    setTest(currentTest);
-
-    const cat = categories?.find(c => c.id === currentTest.categoryId);
-    if (cat) setCategoryName(cat.name);
-
-    if (user.role === 'admin') {
-        setTestState('active'); // Directly to active state for admin preview
-        return;
-    }
-
-    const existingAttempt = resultsData?.find(r => r.testId === testId && r.userId === user.id);
-    if (existingAttempt) {
-        setTestState('attempted');
-    } else {
-        setTestState('guidelines');
-    }
-
-  }, [testId, router, user, tests, categories, resultsData, isLoading]);
-
-  const handleSubmit = useCallback(() => {
-    if (!test || !user || !startTime || !updateResult) return;
-
-    const timeTaken = Math.round((Date.now() - startTime) / 1000);
     
-    let correctCount = 0;
-    let wrongCount = 0;
-    let unansweredCount = 0;
+    try {
+        const testResults = allResults.filter(r => r.testId === testId);
+        
+        const sortedResults = [...testResults].sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return a.timeTaken - b.timeTaken;
+        });
 
-    test.questions.forEach(q => {
-      const userAnswer = answers[q.id];
-      if (userAnswer && userAnswer !== 'Not Attempted') {
-          if (userAnswer === q.correctAnswer) {
-            correctCount++;
-          } else {
-            wrongCount++;
-          }
-      } else {
-          unansweredCount++;
+        const rankedResults: RankedResult[] = sortedResults.map((r, index) => {
+            const resultUser = allUsers.find(u => u.id === r.userId);
+            return { ...r, rank: index + 1, userFullName: resultUser?.fullName || 'N/A' };
+        });
+        setRankings(rankedResults);
+        
+        const userRes = rankedResults.find(r => r.userId === viewingUserId);
+        const currentTest = tests.find(t => t.id === testId);
+        
+        if (!userRes || !currentTest) {
+            setCurrentUserResult(null);
+            setTest(null);
+        } else {
+            setCurrentUserResult(userRes);
+            setTest(currentTest);
+        }
+
+    } catch (e) {
+        console.error("Failed to process results", e);
+        router.push('/dashboard');
+    }
+
+  }, [isLoading, testId, viewingUserId, user, router, adminViewedUserId, tests, allUsers, allResults]);
+
+  const handleDownload = async () => {
+    const input = reportRef.current;
+    if (!input || isDownloading || !pdfLibraries) return;
+
+    setIsDownloading(true);
+    try {
+      const { default: jsPDF } = await pdfLibraries.jsPDF();
+      const { default: html2canvas } = await pdfLibraries.html2canvas();
+
+      const canvas = await html2canvas(input, { scale: 2, useCORS: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = canvasWidth / pdfWidth;
+      const imgHeight = canvasHeight / ratio;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
       }
-    });
-
-    const marksPerCorrect = test.marksPerCorrect || 1;
-    const negativeMarksPerWrong = test.negativeMarksPerWrong || 0;
-    
-    const score = (correctCount * marksPerCorrect) - (wrongCount * negativeMarksPerWrong);
-
-    const newResult: Result = {
-      id: `${user.id}_${test.id}`,
-      testId: test.id,
-      userId: user.id,
-      score,
-      correctCount,
-      wrongCount,
-      unansweredCount,
-      timeTaken,
-      answers,
-      submittedAt: new Date(),
-    };
-    
-    updateResult(newResult);
-
-    router.push(`/results/${test.id}`);
-  }, [test, user, answers, startTime, router, updateResult]);
-
-  useEffect(() => {
-    if (timeLeft === null || testState !== 'active' || user?.role === 'admin') return;
-
-    if (timeLeft <= 0) {
-      toast({
-        title: "Time's up!",
-        description: "Your test has been submitted automatically.",
-      })
-      handleSubmit();
-      return;
+      pdf.save(`Test-Report-${test?.title.replace(/\s+/g, '-')}.pdf`);
+    } catch (err) {
+        console.error("PDF generation failed:", err);
+    } finally {
+        setIsDownloading(false);
     }
-
-    const timer = setInterval(() => {
-      setTimeLeft(prev => (prev !== null ? prev - 1 : null));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, testState, handleSubmit, toast, user]);
-
-  const startTest = () => {
-    if (!test) return;
-    setTestState('active');
-    setTimeLeft(test.duration * 60);
-    setStartTime(Date.now());
   };
 
-  if (testState === 'loading' || !test || !user || isLoading) {
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (!currentUserResult || !test) {
     return (
-        <div className="w-full max-w-3xl mx-auto space-y-6">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-64 w-full" />
+        <div className="text-center py-12">
+            <Card>
+                <CardHeader><CardTitle>No Results Found</CardTitle></CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">The specified user has not attempted this test.</p>
+                    <Button asChild className="mt-4">
+                        <Link href="/dashboard">Back to Dashboard</Link>
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
     );
   }
-
-  if (testState === 'attempted') {
-    return (
-        <Card className="w-full max-w-lg mx-auto text-center">
-            <CardHeader>
-                <CardTitle>Test Already Attempted</CardTitle>
-                <CardDescription>You can only take each test once.</CardDescription>
-            </CardHeader>
-            <CardFooter className="flex-col gap-4">
-                <Button onClick={() => router.push(`/results/${test.id}`)} className="w-full">
-                    View Your Results
-                </Button>
-                <Button variant="outline" onClick={() => router.push('/dashboard')} className="w-full">
-                    Back to Dashboard
-                </Button>
-            </CardFooter>
-        </Card>
-    );
-  }
   
-  if (testState === 'guidelines') {
-    return (
-      <>
-        <GuidelinesScreen test={test} categoryName={categoryName} onStartTest={() => setShowStartConfirmDialog(true)} />
-        <AlertDialog open={showStartConfirmDialog} onOpenChange={setShowStartConfirmDialog}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you are ready for the test?</AlertDialogTitle>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={startTest}>Yes, Start Test</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-      </>
-    );
-  }
+  const { correctCount, wrongCount, unansweredCount, score, timeTaken } = currentUserResult;
+  const { marksPerCorrect = 1, negativeMarksPerWrong = 0 } = test;
+  const maxScore = test.questions.length * marksPerCorrect;
+  const viewingOwnResult = currentUserResult.userId === user?.id;
 
-  if (testState === 'active') {
-      const isPreview = user.role === 'admin';
-      return (
-        <ActiveTestUI
+  return (
+    <div className="space-y-8">
+      <div ref={reportRef} className="space-y-8 p-4 bg-background">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-3xl text-center">Test Results: {test.title}</CardTitle>
+            {!viewingOwnResult && <CardDescription className="text-center font-semibold">Viewing Report for: {currentUserResult.userFullName}</CardDescription>}
+          </CardHeader>
+          <CardContent className="grid md:grid-cols-3 gap-4 text-center">
+            <div className="p-4 bg-secondary rounded-lg">
+              <Trophy className="mx-auto h-8 w-8 text-primary" />
+              <div className="text-2xl font-bold">{currentUserResult.rank}</div>
+              <div className="text-muted-foreground">Rank</div>
+            </div>
+            <div className="p-4 bg-secondary rounded-lg">
+                <div className="flex items-center justify-center gap-2">
+                    <div className="text-2xl font-bold">{score}</div>
+                    <div className="text-muted-foreground">/ {maxScore}</div>
+                </div>
+                <div className="text-muted-foreground">Final Score</div>
+            </div>
+            <div className="p-4 bg-secondary rounded-lg">
+              <Clock className="mx-auto h-8 w-8 text-muted-foreground" />
+              <div className="text-2xl font-bold">{Math.floor(timeTaken / 60)}m {timeTaken % 60}s</div>
+              <div className="text-muted-foreground">Time Taken</div>
+            </div>
+          </CardContent>
+           <CardFooter className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-center">
+                <div className="flex items-center justify-center gap-2 p-2 bg-green-100 dark:bg-green-900/30 rounded-md">
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <span>Correct: {correctCount} (+{correctCount * marksPerCorrect} Marks)</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 p-2 bg-red-100 dark:bg-red-900/30 rounded-md">
+                    <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    <span>Wrong: {wrongCount} ({wrongCount * negativeMarksPerWrong} Marks)</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 p-2 bg-gray-100 dark:bg-gray-700/30 rounded-md">
+                    <MinusCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                    <span>Unanswered: {unansweredCount} ({unansweredCount * negativeMarksPerWrong} Marks)</span>
+                </div>
+           </CardFooter>
+        </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center justify-center gap-2"><Lightbulb className="text-accent" /> AI Motivation Box</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Alert>
+                    <AlertDescription className="prose prose-lg dark:prose-invert max-w-none text-center">
+                        <p>"सफलता की पहली सीढ़ी मेहनत है।"</p>
+                        <p className="text-sm text-muted-foreground mt-2">"The first step to success is hard work."</p>
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
+
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Detailed Review</CardTitle>
+            <CardDescription>Review of the answers for each question.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {test.questions.map((q, index) => {
+              const userAnswer = currentUserResult.answers[q.id];
+              const isCorrect = userAnswer === q.correctAnswer;
+              return (
+                <div key={q.id}>
+                  <div className="flex items-start gap-3">
+                    {isCorrect ? <CheckCircle className="h-5 w-5 text-green-500 mt-1" /> : (userAnswer ? <XCircle className="h-5 w-5 text-destructive mt-1" /> : <MinusCircle className="h-5 w-5 text-muted-foreground mt-1" />)}
+                    <h4 className="font-semibold text-lg flex-1">Q{index + 1}: {q.text}</h4>
+                    {viewingOwnResult && user && (
+                         <Button variant="outline" size="sm" onClick={() => setObjectionQuestion(q)}>
+                            <Flag className="mr-2 h-4 w-4" /> Raise Objection
+                        </Button>
+                    )}
+                  </div>
+                   {q.imageUrl && (
+                    <div className="relative w-full max-w-md h-64 my-4 ml-8 rounded-md overflow-hidden border">
+                         <Image src={q.imageUrl} alt={`Question ${index + 1} image`} layout="fill" objectFit="contain" data-ai-hint="diagram illustration" />
+                    </div>
+                   )}
+                  <div className="mt-4 space-y-2 pl-8">
+                    {q.options.map((opt, optionIndex) => {
+                       const isUserAnswer = opt === userAnswer;
+                       const isCorrectAnswer = opt === q.correctAnswer;
+                       return (
+                         <div
+                           key={`${q.id}-opt-${optionIndex}`}
+                           className={cn(
+                             "p-3 border rounded-md text-sm",
+                             isCorrectAnswer && "bg-green-100 border-green-400 text-green-900 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300",
+                             isUserAnswer && !isCorrectAnswer && "bg-red-100 border-red-400 text-red-900 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300",
+                           )}
+                         >
+                           {isCorrectAnswer && <span className="font-bold">Correct Answer: </span>}
+                           {isUserAnswer && !isCorrectAnswer && <span className="font-bold">Your Answer: </span>}
+                           {opt}
+                         </div>
+                       );
+                    })}
+                  </div>
+                  {!userAnswer && (
+                     <Alert variant="destructive" className="mt-4 ml-8">
+                        <AlertDescription>This question was not answered and received negative marks (if applicable).</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Rankings</CardTitle>
+            <CardDescription>Comparison with other students.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Rank</TableHead>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Time Taken</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rankings.slice(0, 10).map((r) => (
+                  <TableRow key={r.userId} className={r.userId === viewingUserId ? 'bg-primary/20' : ''}>
+                    <TableCell className="font-medium">{r.rank}</TableCell>
+                    <TableCell>{r.userFullName}</TableCell>
+                    <TableCell>{r.score} / {maxScore}</TableCell>
+                    <TableCell>{Math.floor(r.timeTaken / 60)}m {r.timeTaken % 60}s</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className='text-center space-x-4'>
+        {viewingOwnResult ? (
+            <Button asChild>
+                <Link href="/dashboard">Back to Dashboard</Link>
+            </Button>
+        ) : (
+            <Button onClick={() => router.back()}>Back to Student Report</Button>
+        )}
+        <Button variant="outline" onClick={handleDownload} disabled={isDownloading || !pdfLibraries}>
+            <FileDown className="mr-2 h-4 w-4" />
+            {isDownloading ? 'Downloading...' : 'Download as PDF'}
+        </Button>
+      </div>
+      {user && (
+          <RaiseObjectionDialog 
+            isOpen={!!objectionQuestion}
+            onClose={() => setObjectionQuestion(null)}
+            question={objectionQuestion}
             test={test}
             user={user}
-            currentQuestionIndex={currentQuestionIndex}
-            setCurrentQuestionIndex={setCurrentQuestionIndex}
-            answers={answers}
-            setAnswers={setAnswers}
-            timeLeft={timeLeft}
-            onSubmit={handleSubmit}
-            isPreview={isPreview}
-        />
-      );
-  }
-
-  return null; // Fallback
+            onSubmit={updateReport}
+          />
+      )}
+    </div>
+  );
 }
 
-export default function TestPage() {
+export default function ResultsPage() {
     return (
         <AuthGuard>
-            <Suspense fallback={<p>Loading test...</p>}>
-                <TestComponent />
+            <Suspense fallback={<LoadingSkeleton />}>
+                <ResultsContent />
             </Suspense>
         </AuthGuard>
     );
