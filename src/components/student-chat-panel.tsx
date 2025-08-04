@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback, Suspense, useMemo } from 'react';
@@ -108,32 +109,24 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
                 text: data.message,
                 timestamp: new Date(),
             };
-
-            const autoReply: DirectMessage = {
-                sender: 'admin',
-                text: settings.adminChatAutoReply || "Thanks for your message. We will get back to you soon.",
-                timestamp: new Date(Date.now() + 1000), // a bit later to feel more natural
-            };
             
             const currentThread = chatThreads?.find(t => t.studentId === user.id);
             let updatedThread;
 
             if (!currentThread) {
-                // This is the first message from this user, create a new thread
                 updatedThread = {
                     id: user.id,
                     studentId: user.id,
                     studentName: user.fullName,
-                    messages: [newMessage, autoReply],
-                    lastMessageAt: autoReply.timestamp, 
+                    messages: [newMessage],
+                    lastMessageAt: new Date(), 
                     seenByAdmin: false,
                 };
             } else {
-                // Thread exists, add the new message and the auto-reply
                 updatedThread = {
                     ...currentThread,
-                    messages: [...currentThread.messages, newMessage, autoReply],
-                    lastMessageAt: autoReply.timestamp,
+                    messages: [...currentThread.messages, newMessage],
+                    lastMessageAt: new Date(),
                     seenByAdmin: false,
                 };
             }

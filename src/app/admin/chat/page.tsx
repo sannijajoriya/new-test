@@ -88,7 +88,7 @@ function ChatPanel() {
              }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chatThreads]);
+    }, [sortedThreads]);
 
 
     useEffect(() => {
@@ -108,9 +108,9 @@ function ChatPanel() {
     }
 
     const handleSendMessage = async (data: ChatForm) => {
-        if (!selectedThread || !adminUser) return;
+        if (!selectedThread || !adminUser || !Array.isArray(chatThreads)) return;
         try {
-            const threadToUpdate = chatThreads?.find(t => t.studentId === selectedThread.studentId);
+            const threadToUpdate = chatThreads.find(t => t.studentId === selectedThread.studentId);
             if (!threadToUpdate) {
                 toast({ title: "Error", description: "Could not find chat to reply to.", variant: "destructive" });
                 return;
@@ -121,14 +121,13 @@ function ChatPanel() {
                 text: data.message,
                 timestamp: new Date(),
             };
-
-            const updatedThread = {
+            
+            await updateChatThread({
                 ...threadToUpdate,
                 messages: [...threadToUpdate.messages, newMessage],
                 lastMessageAt: newMessage.timestamp,
-            };
-            
-            await updateChatThread(updatedThread);
+            });
+
             form.reset();
 
         } catch (e) {
