@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function useFormattedTimestamp(timestamp: number | Date) {
+export function useFormattedTimestamp(timestamp: number | Date | undefined) {
   const [formattedTime, setFormattedTime] = useState('');
 
   useEffect(() => {
@@ -15,7 +15,12 @@ export function useFormattedTimestamp(timestamp: number | Date) {
     // It prevents a mismatch between server and client rendered times
     if (timestamp) {
         const date = new Date(timestamp);
-        setFormattedTime(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        // Using a non-locale specific format can sometimes be safer
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        setFormattedTime(`${hours}:${minutes}`);
+    } else {
+        setFormattedTime('');
     }
   }, [timestamp]);
 

@@ -73,11 +73,10 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
     const { settings } = useSiteSettings();
     const { toast } = useToast();
     const { data: chatThreads, updateItem: updateChatThread, deleteItem: deleteChatThread } = useChatThreads();
-    const { adminUser } = useAdminUser();
     
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
-    
+    const { adminUser } = useAdminUser();
 
     const thread = useMemo(() => {
         if (!user || !chatThreads) return null;
@@ -124,7 +123,7 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
                     studentId: user.id,
                     studentName: user.fullName,
                     messages: [newMessage, autoReply],
-                    lastMessageAt: new Date(autoReply.timestamp).toISOString(), 
+                    lastMessageAt: autoReply.timestamp, 
                     seenByAdmin: false,
                 };
             } else {
@@ -132,7 +131,7 @@ function StudentChatPanelComponent({ className, showHeader = true }: { className
                 updatedThread = {
                     ...thread,
                     messages: [...thread.messages, newMessage, autoReply],
-                    lastMessageAt: new Date(autoReply.timestamp).toISOString(),
+                    lastMessageAt: autoReply.timestamp,
                     seenByAdmin: false,
                 };
             }
