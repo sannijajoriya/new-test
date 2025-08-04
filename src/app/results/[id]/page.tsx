@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
@@ -180,21 +179,14 @@ function ResultsContent() {
   const { data: user, isLoading: isUserLoading } = useUser();
   const { data: tests, isLoading: isLoadingTests } = useTests();
   const { data: allResults, isLoading: isLoadingResults } = useResults();
-  const { data: allUsers, isLoading: isLoadingAllUsers } = useAllUsers();
+  const { allUsers, isLoading: isLoadingAllUsers } = useAllUsers();
   const { updateItem: updateReport, isLoading: isLoadingReports } = useReports();
   
-  const isLoading = isLoadingTests || isLoadingResults || isLoadingAllUsers || isLoadingReports || isUserLoading;
-
   const router = useRouter();
   const reportRef = useRef<HTMLDivElement>(null);
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [objectionQuestion, setObjectionQuestion] = useState<QuestionType | null>(null);
-
-  const viewingUserId = useMemo(() => {
-    if (isUserLoading || !user) return null;
-    return (user.role === 'admin' && adminViewedUserId) ? adminViewedUserId : user.id;
-  }, [user, adminViewedUserId, isUserLoading]);
 
   const pdfLibraries = useMemo(() => {
     if (typeof window !== 'undefined') {
@@ -206,20 +198,20 @@ function ResultsContent() {
     return null;
   }, []);
   
-  const { test, currentUserResult, rankings } = useMemo(() => {
-    if (isLoading || !viewingUserId || !testId || !tests || !allUsers || !allResults) {
-        return { test: null, currentUserResult: null, rankings: [] };
-    }
+  const viewingUserId = useMemo(() => {
+    if (!user) return null;
+    return user.role === 'admin' && adminViewedUserId ? adminViewedUserId : user.id;
+  }, [user, adminViewedUserId]);
 
-    const currentTest = tests.find(t => t.id === testId);
-    if (!currentTest) {
-        return { test: null, currentUserResult: null, rankings: [] };
-    }
+  const test = useMemo(() => {
+    if (!tests || !testId) return null;
+    return tests.find(t => t.id === testId);
+  }, [tests, testId]);
+
+  const { rankings, currentUserResult } = useMemo(() => {
+    if (!allResults || !testId || !allUsers) return { rankings: [], currentUserResult: null };
 
     const testResults = allResults.filter(r => r.testId === testId);
-    if (testResults.length === 0) {
-        return { test: currentTest, currentUserResult: null, rankings: [] };
-    }
     
     const sortedResults = [...testResults].sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
@@ -230,13 +222,19 @@ function ResultsContent() {
         const resultUser = allUsers.find(u => u.id === r.userId);
         return { ...r, rank: index + 1, userFullName: resultUser?.fullName || 'N/A' };
     });
-    
+
     const userRes = rankedResults.find(r => r.userId === viewingUserId);
 
-    return { test: currentTest, currentUserResult: userRes || null, rankings: rankedResults };
+    return { rankings: rankedResults, currentUserResult: userRes || null };
 
-  }, [isLoading, viewingUserId, testId, tests, allUsers, allResults]);
+  }, [allResults, allUsers, testId, viewingUserId]);
 
+  useEffect(() => {
+    if (isUserLoading || isLoadingTests) return;
+    if (user?.role === 'student' && adminViewedUserId && user.id !== adminViewedUserId) {
+        router.push('/dashboard');
+    }
+  }, [user, adminViewedUserId, router, isUserLoading, isLoadingTests]);
 
   const handleDownload = async () => {
     const input = reportRef.current;
@@ -275,6 +273,8 @@ function ResultsContent() {
         setIsDownloading(false);
     }
   };
+
+  const isLoading = isLoadingTests || isLoadingResults || isLoadingAllUsers || isLoadingReports || isUserLoading;
 
   if (isLoading) {
     return <LoadingSkeleton />;

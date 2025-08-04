@@ -518,7 +518,6 @@ function TestComponent() {
     
     let correctCount = 0;
     let wrongCount = 0;
-    let unansweredCount = 0;
 
     test.questions.forEach(q => {
       const userAnswer = answers[q.id];
@@ -528,10 +527,10 @@ function TestComponent() {
           } else {
             wrongCount++;
           }
-      } else {
-          unansweredCount++;
       }
     });
+
+    const unansweredCount = test.questions.length - correctCount - wrongCount;
 
     const marksPerCorrect = test.marksPerCorrect || 1;
     const negativeMarksPerWrong = test.negativeMarksPerWrong || 0;
@@ -661,3 +660,5 @@ export default function TestPage() {
         </AuthGuard>
     );
 }
+
+    

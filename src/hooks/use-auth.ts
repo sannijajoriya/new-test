@@ -4,8 +4,8 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLoading } from './use-loading';
-import { upsertUser, createUser, verifyPassword, fetchAllUsers } from '@/actions/data-actions';
-import useSWR, { mutate } from 'swr';
+import { upsertUser, createUser, verifyPassword } from '@/actions/data-actions';
+import { useAllUsers } from './use-data'; 
 import type { User } from '@/lib/types';
 
 
@@ -47,9 +47,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   });
   const [loading, setLoading] = useState(true);
   const { setLoading: setAppLoading } = useLoading();
-  const router = useRouter();
+  const { mutate: mutateAllUsers } = useAllUsers();
   
-  // This effect only runs on the client, after the initial render.
   useEffect(() => {
     const savedUser = localStorage.getItem('authUser');
     if (savedUser) {
@@ -58,12 +57,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false);
   }, []);
   
-   // This effect re-fetches user data when the authUser changes (e.g., on login).
   useEffect(() => {
     if (authUser) {
-        mutate('allUsers');
+        mutateAllUsers();
     }
-  }, [authUser]);
+  }, [authUser, mutateAllUsers]);
 
 
   const login = async (email: string, password: string) => {
@@ -99,14 +97,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(async () => {
     localLogout();
     setAuthUser(null);
-    // Use a hard reload to ensure all state is cleared
     window.location.href = '/login';
   }, []);
   
   const forgotPassword = async (email: string) => {
     setAppLoading(true);
-    // This needs to be adapted if not using Supabase Auth for password resets
-    // For now, we'll just show a message.
     console.warn("forgotPassword needs to be implemented for custom auth");
     setAppLoading(false);
     return { success: true, message: 'If an account exists, a password reset link has been sent (Feature under development).' };
@@ -122,7 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       forgotPassword,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [authUser, loading, logout]
+    [authUser, loading]
   );
 
   return React.createElement(AuthContext.Provider, { value }, children);
@@ -139,15 +134,21 @@ export const useAuth = () => {
 
 export const useUser = () => {
     const { authUser, loading: authLoading } = useAuth();
-    const { data: allUsers, isLoading: usersLoading } = useSWR<User[]>('allUsers', fetchAllUsers);
+    const { allUsers, isLoading: usersLoading } = useAllUsers();
     
-    const user = allUsers?.find(u => u.id === authUser?.id) || null;
+    const user = useMemo(() => {
+        if (!authUser || !Array.isArray(allUsers)) return null;
+        return allUsers.find(u => u.id === authUser.id) || null;
+    }, [authUser, allUsers]);
 
     return { data: user, isLoading: authLoading || usersLoading };
 };
 
 export const useAdminUser = () => {
-    const { data: allUsers, isLoading } = useSWR<User[]>('allUsers', fetchAllUsers);
-    const adminUser = React.useMemo(() => allUsers?.find(u => u.role === 'admin'), [allUsers]);
+    const { allUsers, isLoading } = useAllUsers();
+    const adminUser = React.useMemo(() => {
+        if (!Array.isArray(allUsers)) return null;
+        return allUsers.find(u => u.role === 'admin');
+    }, [allUsers]);
     return { adminUser, isLoading };
 };

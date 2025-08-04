@@ -160,7 +160,7 @@ function MyProgressTab() {
         return <Card><CardContent><Skeleton className="h-64 w-full" /></CardContent></Card>;
     }
 
-    if (userResults.length === 0) {
+    if (!user || userResults.length === 0) {
         return (
             <Card className="text-center py-12">
                  <CardHeader>
@@ -204,7 +204,7 @@ function MyProgressTab() {
                                         <TableCell>{submissionDate}</TableCell>
                                         <TableCell className="text-right">
                                             <Button asChild variant="link">
-                                                <Link href={`/results/${result.testId}`}>View Report</Link>
+                                                <Link href={`/results/${result.testId}?userId=${user.id}`}>View Report</Link>
                                             </Button>
                                         </TableCell>
                                     </TableRow>

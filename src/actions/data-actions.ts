@@ -150,8 +150,14 @@ export async function upsertResult(result: Omit<Result, 'id'>): Promise<Result> 
                 userId,
             },
         },
-        update: dataToUpsert,
-        create: dataToUpsert,
+        update: {
+            ...dataToUpsert,
+            submittedAt: new Date(dataToUpsert.submittedAt), // Ensure date object on update
+        },
+        create: {
+             ...dataToUpsert,
+            submittedAt: new Date(dataToUpsert.submittedAt), // Ensure date object on create
+        },
     });
     return serialize(createdOrUpdatedResult) as Result;
 }
@@ -237,4 +243,5 @@ export async function removeSarthiBotConversation(conversationId: string) {
     // ID is studentId in this case
     return await prisma.sarthiBotConversation.delete({ where: { studentId: conversationId } });
 }
+
 
