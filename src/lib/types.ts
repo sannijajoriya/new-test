@@ -57,7 +57,7 @@ export interface Result {
 export interface ChatMessage {
   sender: 'student' | 'admin';
   message: string;
-  timestamp: Date;
+  timestamp: Date | number;
 }
 
 export interface Report {
