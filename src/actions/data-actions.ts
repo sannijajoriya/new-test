@@ -8,17 +8,20 @@ import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainin
 
 const prisma = new PrismaClient();
 
-// Helper to handle JSON conversion for Prisma - no longer needed for fields that are now JSON type
+// Helper to handle JSON conversion for Prisma
 function serialize<T>(data: T): T {
-    return JSON.parse(JSON.stringify(data, (key, value) =>
-        typeof value === 'bigint' ? value.toString() : value
-    ));
+    // Using JSON.parse(JSON.stringify(...)) is a robust way to ensure deep conversion
+    // of any non-serializable values (like Date objects in nested structures) and to
+    // correctly type the complex JSON fields from Prisma.
+    return JSON.parse(JSON.stringify(data));
 }
 
 // Fetch Actions
 export async function fetchTests(): Promise<Test[]> {
   const tests = await prisma.test.findMany();
-  return tests as Test[];
+  // The 'questions' field is of type Json. We must properly cast it.
+  // Using a helper function handles any potential complexities.
+  return serialize(tests) as Test[];
 }
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -37,12 +40,13 @@ export async function fetchResults(): Promise<Result[]> {
 
 export async function fetchReports(): Promise<Report[]> {
     const reports = await prisma.report.findMany();
-    return reports as Report[];
+    return serialize(reports) as Report[];
 }
 
 export async function fetchChatThreads(): Promise<ChatThread[]> {
     const threads = await prisma.chatThread.findMany();
-    return threads as ChatThread[];
+    // The 'messages' field contains Date objects that need serialization.
+    return serialize(threads) as ChatThread[];
 }
 
 export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingData[]> {
@@ -51,7 +55,7 @@ export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingDat
 
 export async function fetchSarthiBotConversations(): Promise<SarthiBotConversation[]> {
     const convos = await prisma.sarthiBotConversation.findMany();
-    return convos as SarthiBotConversation[];
+    return serialize(convos) as SarthiBotConversation[];
 }
 
 export async function fetchStudentFeedbacks(): Promise<Feedback[]> {
@@ -243,5 +247,4 @@ export async function removeSarthiBotConversation(conversationId: string) {
     // ID is studentId in this case
     return await prisma.sarthiBotConversation.delete({ where: { studentId: conversationId } });
 }
-
 
