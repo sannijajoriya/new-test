@@ -21,7 +21,7 @@ export async function fetchTests(): Promise<Test[]> {
   const tests = await prisma.test.findMany();
   // The 'questions' field is of type Json. We must properly cast it.
   // Using a helper function handles any potential complexities.
-  return serialize(tests) as Test[];
+  return serialize(tests) as unknown as Test[];
 }
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -46,7 +46,7 @@ export async function fetchReports(): Promise<Report[]> {
 export async function fetchChatThreads(): Promise<ChatThread[]> {
     const threads = await prisma.chatThread.findMany();
     // The 'messages' field contains Date objects that need serialization.
-    return serialize(threads) as ChatThread[];
+    return serialize(threads) as unknown as ChatThread[];
 }
 
 export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingData[]> {
