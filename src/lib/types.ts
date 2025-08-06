@@ -36,7 +36,7 @@ export interface User {
   fullName: string;
   email: string;
   password?: string | null;
-  profilePictureUrl?: string;
+  profilePictureUrl?: string | null;
   role: 'student' | 'admin';
   createdAt?: Date;
 }
