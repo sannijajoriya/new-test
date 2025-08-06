@@ -4,11 +4,11 @@
 export interface Category {
   id: string;
   name: string;
-  logoImageUrl?: string;
-  bannerImageUrl?: string;
+  logoImageUrl?: string | null;
+  bannerImageUrl?: string | null;
   userCount?: number;
-  description?: string;
-  languages?: string;
+  description?: string | null;
+  languages?: string | null;
   features?: string[];
 }
 
@@ -27,7 +27,7 @@ export interface Test {
   questions: Question[];
   marksPerCorrect: number;
   negativeMarksPerWrong: number;
-  guidelines?: string;
+  guidelines?: string | null;
   categoryId?: string | null;
 }
 
@@ -35,8 +35,8 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
-  password?: string;
-  profilePictureUrl?: string;
+  password?: string | null;
+  profilePictureUrl?: string | null;
   role: 'student' | 'admin';
   createdAt?: Date;
 }
@@ -96,7 +96,7 @@ export interface Feedback {
   fullName: string;
   city: string;
   message: string;
-  photoUrl?: string;
+  photoUrl?: string | null;
   createdAt: Date;
   status: 'pending' | 'approved' | 'rejected';
   order?: number;
