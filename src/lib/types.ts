@@ -113,7 +113,7 @@ export interface SiteSettings {
   newsBannerImageUrl?: string | null;
   newsBannerTitle?: string | null;
   newsBannerLink?: string | null;
-  newsBannerDisplayRule?: 'always' | 'session' | null;
+  newsBannerDisplayRule?: 'ALWAYS' | 'SESSION' | null;
   heroBannerText?: string | null;
   isHeroBannerTextEnabled?: boolean | null;
   heroBannerImageUrl?: string | null;

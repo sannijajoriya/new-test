@@ -472,14 +472,14 @@ function NewsBannerManager() {
                     <Label>Display Rule</Label>
                     <RadioGroup
                         value={settings.newsBannerDisplayRule}
-                        onValueChange={(value: 'always' | 'session') => updateSettings({ newsBannerDisplayRule: value as 'always' | 'session' })}
+                        onValueChange={(value) => updateSettings({ newsBannerDisplayRule: value as 'SESSION' | 'ALWAYS' })}
                     >
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="session" id="session" />
+                            <RadioGroupItem value="SESSION" id="session" />
                             <Label htmlFor="session">Show once per session</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="always" id="always" />
+                            <RadioGroupItem value="ALWAYS" id="always" />
                             <Label htmlFor="always">Show every time the page is loaded</Label>
                         </div>
                     </RadioGroup>
