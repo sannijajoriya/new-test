@@ -10,8 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { GenerateOptions, MessageData } from 'genkit';
-
 
 const ChatHistorySchema = z.object({
     role: z.enum(['user', 'model']),
@@ -78,10 +76,7 @@ const sarthiBotFlow = ai.defineFlow(
         systemPrompt += `\n\nHere is some specific information you MUST use to answer questions. If the user asks something similar to one of these questions, you should provide the given answer:\n${trainingBlock}`;
     }
     
-    const userMessageContent: ({text: string} | {media: {url: string}})[] = [];
-    if (input.text) {
-        userMessageContent.push({ text: input.text });
-    }
+    const userMessageContent: any[] = [{ text: input.text }];
     if (input.photoDataUri) {
         userMessageContent.push({ media: { url: input.photoDataUri } });
     }
@@ -96,6 +91,7 @@ const sarthiBotFlow = ai.defineFlow(
     if (aicall_messages.length > 0 && aicall_messages[0].role === 'model') {
         aicall_messages = aicall_messages.slice(1);
     }
+
 
     const {output} = await ai.generate({
         model: 'googleai/gemini-2.0-flash',
