@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { BrainCircuit, Edit, ImagePlus, Newspaper, Save, Settings, Trash2, LayoutTemplate, MessageSquare } from 'lucide-react';
 import type { SarthiBotTrainingData, SarthiBotConversation } from '@/lib/types';
@@ -18,7 +18,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { useSiteSettings, useSarthiBotTrainingData, useSarthiBotConversations, useAllUsers, useUser } from '@/hooks/use-data';
+import { useSiteSettings, useSarthiBotTrainingData, useSarthiBotConversations, useAllUsers } from '@/hooks/use-data';
+import { useUser } from '@/hooks/use-auth';
 import { ImageUploader } from '@/components/image-uploader';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,7 +37,7 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 function AdminProfileManager() {
-    const user = useUser();
+    const {data: user} = useUser();
     const { updateUser } = useAllUsers();
     const { toast } = useToast();
 
@@ -171,7 +172,7 @@ type BotSettingsFormData = z.infer<typeof botSettingsSchema>;
 
 
 function SarthiBotManager() {
-    const { settings, updateSettings } = useSiteSettings();
+    const { settings, updateSettings, isLoading: isLoadingSettings } = useSiteSettings();
     const { toast } = useToast();
     const { trainingData, updateSarthiBotTrainingData, isLoading: isLoadingTrainingData } = useSarthiBotTrainingData();
     const { conversations, isLoading: isLoadingConversations } = useSarthiBotConversations();
@@ -182,31 +183,41 @@ function SarthiBotManager() {
     const [newAnswer, setNewAnswer] = useState('');
     const [editingItem, setEditingItem] = useState<SarthiBotTrainingData | null>(null);
     
-    const form = useForm<BotSettingsFormData>();
+    const form = useForm<BotSettingsFormData>({
+        resolver: zodResolver(botSettingsSchema),
+        defaultValues: {
+            isBotEnabled: false,
+            botName: '',
+            botIntroMessage: '',
+            botAvatarUrl: '',
+        }
+    });
 
     useEffect(() => {
-        if (settings) {
+        if(settings) {
             form.reset({
-                isBotEnabled: settings.isBotEnabled,
-                botName: settings.botName,
-                botIntroMessage: settings.botIntroMessage,
-                botAvatarUrl: settings.botAvatarUrl,
+                isBotEnabled: settings.isBotEnabled || false,
+                botName: settings.botName || '',
+                botIntroMessage: settings.botIntroMessage || '',
+                botAvatarUrl: settings.botAvatarUrl || '',
             });
         }
-    }, [settings, form]);
+    }, [settings]); // Removed form from dependency array to prevent infinite loop
     
     const handleAddOrUpdateTrainingItem = () => {
-        if (!newQuestion.trim() || !newAnswer.trim() || !trainingData) {
+        if (!newQuestion.trim() || !newAnswer.trim()) {
             toast({ title: "Error", description: "Question and Answer cannot be empty.", variant: "destructive" });
             return;
         }
 
+        const currentData = trainingData || [];
         let updatedData;
+        
         if (editingItem) {
-            updatedData = trainingData.map(item => item.id === editingItem.id ? { ...item, question: newQuestion, answer: newAnswer } : item);
+            updatedData = currentData.map(item => item.id === editingItem.id ? { ...item, question: newQuestion, answer: newAnswer } : item);
         } else {
             const newItem = { id: `qa-${Date.now()}`, question: newQuestion, answer: newAnswer };
-            updatedData = [...trainingData, newItem];
+            updatedData = [...currentData, newItem];
         }
 
         updateSarthiBotTrainingData(updatedData);
@@ -232,11 +243,10 @@ function SarthiBotManager() {
     const onBotSettingsSubmit = (data: BotSettingsFormData) => {
         updateSettings(data);
         toast({ title: "Bot Settings Saved!", description: "The bot customization has been updated." });
-        form.reset(data);
+        form.reset(data, { keepDirty: false });
     };
 
-
-    if (!settings || isLoadingTrainingData || isLoadingConversations) return <Skeleton className="h-96 w-full" />;
+    if (isLoadingSettings || isLoadingTrainingData || isLoadingConversations) return <Skeleton className="h-96 w-full" />;
 
     return (
         <div className="space-y-6">
@@ -324,7 +334,7 @@ function SarthiBotManager() {
                             <Table>
                                 <TableHeader><TableRow><TableHead>Question</TableHead><TableHead>Answer</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                                 <TableBody>
-                                    {trainingData?.map(item => (
+                                    {(trainingData || []).map(item => (
                                         <TableRow key={item.id}>
                                             <TableCell className="max-w-sm truncate">{item.question}</TableCell>
                                             <TableCell className="max-w-sm truncate">{item.answer}</TableCell>
@@ -352,7 +362,7 @@ function SarthiBotManager() {
                         <Table>
                             <TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Last Message</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
                             <TableBody>
-                                {conversations?.sort((a,b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()).map(convo => (
+                                {(conversations || []).sort((a,b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()).map(convo => (
                                     <TableRow key={convo.studentId}>
                                         <TableCell>{convo.studentName}</TableCell>
                                         <TableCell>{new Date(convo.lastMessageAt).toLocaleString()}</TableCell>
@@ -373,28 +383,30 @@ function SarthiBotManager() {
                     <DialogHeader>
                         <DialogTitle>Conversation with {viewingConversation?.studentName}</DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className="h-96 border rounded-md p-4">
-                         <div className="space-y-4">
-                            {viewingConversation?.messages.map((msg, index) => (
-                                <div key={index} className={cn("flex items-end gap-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
-                                    {msg.role === 'bot' && (
-                                         <Avatar className="h-8 w-8 self-start">
-                                            {settings?.botAvatarUrl ? <AvatarImage src={settings.botAvatarUrl} alt="Bot Avatar" /> : <AvatarFallback><BrainCircuit /></AvatarFallback>}
-                                        </Avatar>
-                                    )}
-                                    <div className={cn(
-                                        "max-w-sm rounded-2xl px-3 py-2 whitespace-pre-wrap shadow-md",
-                                        msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"
-                                    )}>
-                                        {msg.image && (
-                                             <Image src={msg.image} width={200} height={200} alt="User upload" className="rounded-md mb-2" />
+                    {viewingConversation && (
+                        <ScrollArea className="h-96 border rounded-md p-4">
+                            <div className="space-y-4">
+                                {viewingConversation.messages.map((msg, index) => (
+                                    <div key={index} className={cn("flex items-end gap-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                                        {msg.role === 'bot' && (
+                                            <Avatar className="h-8 w-8 self-start">
+                                                {settings?.botAvatarUrl ? <AvatarImage src={settings.botAvatarUrl} alt="Bot Avatar" /> : <AvatarFallback><BrainCircuit /></AvatarFallback>}
+                                            </Avatar>
                                         )}
-                                        <p className="text-sm">{msg.text}</p>
+                                        <div className={cn(
+                                            "max-w-sm rounded-2xl px-3 py-2 whitespace-pre-wrap shadow-md",
+                                            msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"
+                                        )}>
+                                            {msg.image && (
+                                                <Image src={msg.image} width={200} height={200} alt="User upload" className="rounded-md mb-2" />
+                                            )}
+                                            <p className="text-sm">{msg.text}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                         </div>
-                    </ScrollArea>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    )}
                     <DialogFooter>
                         <DialogClose asChild><Button>Close</Button></DialogClose>
                     </DialogFooter>
@@ -550,11 +562,11 @@ function HomepageBannerManager() {
 function ChatSettingsManager() {
     const { settings, updateSettings } = useSiteSettings();
     const { toast } = useToast();
-    const [autoReply, setAutoReply] = useState('');
+    const [autoReply, setAutoReply] = useState(settings?.adminChatAutoReply || '');
 
     useEffect(() => {
         if (settings) {
-            setAutoReply(settings.adminChatAutoReply);
+            setAutoReply(settings.adminChatAutoReply || '');
         }
     }, [settings]);
 
@@ -576,7 +588,7 @@ function ChatSettingsManager() {
                     <Label htmlFor="auto-reply">Auto-Reply Message</Label>
                     <Textarea
                         id="auto-reply"
-                        value={autoReply}
+                        value={autoReply || ''}
                         onChange={(e) => setAutoReply(e.target.value)}
                         placeholder="Enter the message to send when a student messages you."
                         rows={6}
