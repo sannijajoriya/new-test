@@ -6,10 +6,10 @@ export interface Category {
   name: string;
   logoImageUrl?: string | null;
   bannerImageUrl?: string | null;
-  userCount?: number;
+  userCount?: number | null;
   description?: string | null;
   languages?: string | null;
-  features?: string[];
+  features?: string[] | null;
 }
 
 export interface Question {
@@ -17,7 +17,7 @@ export interface Question {
   text: string;
   options: string[];
   correctAnswer: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
 }
 
 export interface Test {
@@ -51,7 +51,7 @@ export interface Result {
   unansweredCount: number;
   timeTaken: number; 
   answers: Record<string, string>; 
-  submittedAt: Date; 
+  submittedAt: Date | string; 
 }
 
 export interface ChatMessage {
@@ -69,7 +69,7 @@ export interface Report {
   questionId: string;
   questionText: string;
   reason: string;
-  remarks: string;
+  remarks: string | null;
   status: 'pending' | 'responded';
   chat: ChatMessage[];
   createdAt: Date;
@@ -99,26 +99,26 @@ export interface Feedback {
   photoUrl?: string | null;
   createdAt: Date;
   status: 'pending' | 'approved' | 'rejected';
-  order?: number;
+  order?: number | null;
 }
 
 export interface SiteSettings {
-  id?: 'default';
-  logoUrl?: string;
-  botName?: string;
-  botAvatarUrl?: string;
-  botIntroMessage?: string;
-  isBotEnabled?: boolean;
-  isNewsBannerEnabled?: boolean;
-  newsBannerImageUrl?: string;
-  newsBannerTitle?: string;
-  newsBannerLink?: string;
-  newsBannerDisplayRule?: 'always' | 'session';
-  heroBannerText?: string;
-  isHeroBannerTextEnabled?: boolean;
-  heroBannerImageUrl?: string;
-  heroBannerOverlayOpacity?: number;
-  adminChatAutoReply?: string;
+  id: 'default';
+  logoUrl?: string | null;
+  botName?: string | null;
+  botAvatarUrl?: string | null;
+  botIntroMessage?: string | null;
+  isBotEnabled?: boolean | null;
+  isNewsBannerEnabled?: boolean | null;
+  newsBannerImageUrl?: string | null;
+  newsBannerTitle?: string | null;
+  newsBannerLink?: string | null;
+  newsBannerDisplayRule?: 'always' | 'session' | null;
+  heroBannerText?: string | null;
+  isHeroBannerTextEnabled?: boolean | null;
+  heroBannerImageUrl?: string | null;
+  heroBannerOverlayOpacity?: number | null;
+  adminChatAutoReply?: string | null;
 }
 
 export interface SarthiBotMessage {
