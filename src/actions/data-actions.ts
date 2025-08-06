@@ -55,7 +55,7 @@ export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingDat
 
 export async function fetchSarthiBotConversations(): Promise<SarthiBotConversation[]> {
     const convos = await prisma.sarthiBotConversation.findMany();
-    return serialize(convos) as SarthiBotConversation[];
+    return serialize(convos) as unknown as SarthiBotConversation[];
 }
 
 export async function fetchStudentFeedbacks(): Promise<Feedback[]> {
@@ -247,4 +247,5 @@ export async function removeSarthiBotConversation(conversationId: string) {
     // ID is studentId in this case
     return await prisma.sarthiBotConversation.delete({ where: { studentId: conversationId } });
 }
+
 
