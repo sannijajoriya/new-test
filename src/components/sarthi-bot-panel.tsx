@@ -126,18 +126,16 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
             return;
         }
 
-        setIsLoading(true);
         const userMessage: SarthiBotMessage = {
           role: 'user',
           text: data.message || '',
           ...(imagePreview && { image: imagePreview }),
         };
-        const currentImageData = imageData;
+
         const updatedMessages = [...messages, userMessage];
         setMessages(updatedMessages);
-
+        setIsLoading(true);
         form.reset();
-        clearImage();
         
         try {
             const historyForAI: ChatHistory[] = updatedMessages
@@ -158,18 +156,19 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
 
             const result = await askSarthiBot({ 
                 text: userMessage.text || '',
-                photoDataUri: currentImageData || undefined,
+                photoDataUri: imageData || undefined,
                 history: historyForAI,
                 trainingData: trainingData || [],
                 botName: settings.botName,
             });
+            clearImage();
             
             const botMessage: SarthiBotMessage = {
                 role: 'bot',
                 text: result.response,
             };
-            const finalMessages = [...updatedMessages, botMessage];
-            setMessages(finalMessages);
+
+            setMessages(prev => [...prev, botMessage]);
             
             // Save conversation after bot response
             if (updateSarthiBotConversation) {
@@ -177,7 +176,7 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
                     id: user.id,
                     studentId: user.id,
                     studentName: user.fullName,
-                    messages: finalMessages,
+                    messages: [...updatedMessages, botMessage],
                     lastMessageAt: new Date(),
                 };
                 updateSarthiBotConversation(newConversation);
@@ -190,8 +189,7 @@ export function SarthiBotPanel({ className, showHeader = true }: { className?: s
                 role: 'bot',
                 text: "माफ़ कीजिए, मुझे एक त्रुटि का सामना करना पड़ा। कृपया थोड़ी देर बाद पुनः प्रयास करें।",
             };
-            const finalMessages = [...updatedMessages, botMessage];
-            setMessages(finalMessages);
+            setMessages(prev => [...prev, botMessage]);
         } finally {
              setIsLoading(false);
         }

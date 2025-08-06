@@ -18,8 +18,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { FeedbackCarousel } from '@/components/feedback-carousel';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTests, useCategories, useResults, useReports } from '@/hooks/use-data';
-import { useUser } from '@/hooks/use-auth';
+import { useTests, useCategories, useResults, useReports, useUser } from '@/hooks/use-data';
+
 
 function formatUserCount(count?: number) {
     if (!count) return '0';
@@ -218,81 +218,6 @@ function MyProgressTab() {
     );
 }
 
-function MyReportsTab() {
-    const { data: user } = useUser();
-    const { data: reports, updateItem: updateReport, isLoading } = useReports();
-    const [viewingReport, setViewingReport] = useState<Report | null>(null);
-
-    const userReports = useMemo(() => {
-        if (!user || !reports) return [];
-        return reports.filter(r => r.studentId === user.id).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }, [user, reports]);
-
-
-    const handleUpdate = useCallback((updatedReport: Report) => {
-        updateReport(updatedReport);
-        setViewingReport(updatedReport);
-    }, [updateReport]);
-
-    if (isLoading) {
-        return <Card><CardContent><Skeleton className="h-64 w-full" /></CardContent></Card>;
-    }
-
-    if (userReports.length === 0) {
-        return <p className="text-muted-foreground text-center py-8">You have not reported any issues yet.</p>;
-    }
-
-    return (
-        <>
-        <Card>
-            <CardHeader>
-                <CardTitle>My Reported Issues</CardTitle>
-                <CardDescription>Here is a list of all the questions you have reported.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Test</TableHead>
-                                <TableHead>Question</TableHead>
-                                <TableHead>Reason</TableHead>
-                                <TableHead className="text-center">Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {userReports.map(report => (
-                                 <TableRow key={report.id}>
-                                    <TableCell className="font-medium max-w-xs truncate">{report.testTitle}</TableCell>
-                                    <TableCell className="max-w-xs truncate">{report.questionText}</TableCell>
-                                    <TableCell>{report.reason}</TableCell>
-                                    <TableCell className="text-center">
-                                         <Badge variant={report.status === 'responded' ? 'default' : 'secondary'} className={report.status === 'responded' ? 'bg-green-600' : ''}>
-                                            {report.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="outline" size="sm" onClick={() => setViewingReport(report)}>View/Reply</Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
-        </Card>
-        <ReportChatDialog
-            isOpen={!!viewingReport}
-            onClose={() => setViewingReport(null)}
-            report={viewingReport}
-            onUpdate={handleUpdate}
-            role="student"
-        />
-        </>
-    );
-}
-
 function DashboardContent() {
   const { data: user } = useUser();
   const searchParams = useSearchParams();
@@ -306,19 +231,15 @@ function DashboardContent() {
       </div>
       
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
             <TabsTrigger value="series">Test Series</TabsTrigger>
             <TabsTrigger value="progress">My Progress</TabsTrigger>
-            <TabsTrigger value="reports">My Reports</TabsTrigger>
         </TabsList>
         <TabsContent value="series" className="pt-6">
             <TestSeriesList />
         </TabsContent>
         <TabsContent value="progress" className="pt-6">
             <MyProgressTab />
-        </TabsContent>
-        <TabsContent value="reports" className="pt-6">
-             <MyReportsTab />
         </TabsContent>
       </Tabs>
 

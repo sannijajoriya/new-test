@@ -7,6 +7,14 @@ import Image from 'next/image';
 import { useSiteSettings } from '@/hooks/use-data';
 import { Skeleton } from './ui/skeleton';
 
+const TelegramIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-send-horizontal">
+        <path d="m3 3 3 9-3 9 19-9Z"/>
+        <path d="M6 12h16"/>
+    </svg>
+);
+
+
 export function Footer() {
   const { settings } = useSiteSettings();
   
@@ -41,6 +49,7 @@ export function Footer() {
             <div className="flex gap-4">
               <Link href="#" className="text-muted-foreground hover:text-primary transition-colors"><Instagram /></Link>
               <Link href="#" className="text-muted-foreground hover:text-primary transition-colors"><Twitter /></Link>
+              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors"><TelegramIcon /></Link>
             </div>
             <div className="mt-4 flex items-center gap-2 text-muted-foreground">
                 <Mail className="h-4 w-4" />

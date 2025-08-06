@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { useSiteSettings, useAllUsers } from "@/hooks/use-data";
 import { useUser, useAdminUser } from "@/hooks/use-auth";
 import Image from "next/image";
-import { StudentChatPanel } from "./student-chat-panel";
+import { ChatPanel } from "./chat-panel";
 import { useState, useEffect } from "react";
 import { SarthiBotPanel } from './sarthi-bot-panel';
 import { MessageSquare, BrainCircuit, ArrowLeft } from 'lucide-react';
@@ -94,7 +94,7 @@ export function FloatingChatButton() {
                 </div>
             </div>
             <div className="flex-grow overflow-hidden">
-                {activeView === 'admin' && <StudentChatPanel className="h-full border-none shadow-none rounded-none" showHeader={false} />}
+                {activeView === 'admin' && <ChatPanel className="h-full border-none shadow-none rounded-none" showHeader={false} />}
                 {activeView === 'bot' && <SarthiBotPanel className="h-full border-none shadow-none rounded-none" showHeader={false} />}
             </div>
         </>

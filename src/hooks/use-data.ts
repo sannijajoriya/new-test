@@ -38,20 +38,20 @@ const defaultSiteSettings: SiteSettings = {
 export const useTests = () => {
     const { data, error, isLoading, mutate } = useSWR<Test[]>('tests', fetcher);
     const updateTest = React.useCallback(async (test: Test) => {
-        const optimisticData = data?.map(t => t.id === test.id ? test : t) || [test];
-        if (!data?.some(t => t.id === test.id)) {
+        const optimisticData = (data || []).map(t => t.id === test.id ? test : t);
+        if (!(data || []).some(t => t.id === test.id)) {
             optimisticData.push(test);
         }
         await mutate(DataActions.upsertTest(test), { optimisticData, revalidate: false });
     }, [data, mutate]);
 
     const deleteTest = React.useCallback(async (id: string) => {
-        const optimisticData = data?.filter(t => t.id !== id) || [];
+        const optimisticData = (data || []).filter(t => t.id !== id);
         await mutate(DataActions.removeTest(id), { optimisticData, revalidate: false });
     }, [data, mutate]);
 
     return { 
-        data, 
+        data: data || [], 
         isLoading, 
         error, 
         mutate,
@@ -63,20 +63,20 @@ export const useTests = () => {
 export const useCategories = () => {
     const { data, error, isLoading, mutate } = useSWR<Category[]>('categories', fetcher);
     const updateCategory = React.useCallback(async (category: Category) => {
-        const optimisticData = data?.map(c => c.id === category.id ? category : c) || [category];
-        if (!data?.some(c => c.id === category.id)) {
+        const optimisticData = (data || []).map(c => c.id === category.id ? category : c);
+        if (!(data || []).some(c => c.id === category.id)) {
             optimisticData.push(category);
         }
         await mutate(DataActions.upsertCategory(category), { optimisticData, revalidate: false });
     }, [data, mutate]);
 
     const deleteCategory = React.useCallback(async (id: string, deleteTests: boolean) => {
-        const optimisticData = data?.filter(c => c.id !== id) || [];
+        const optimisticData = (data || []).filter(c => c.id !== id);
         await mutate(DataActions.removeCategory(id, deleteTests), { optimisticData, revalidate: false });
     }, [data, mutate]);
 
     return {
-        data,
+        data: data || [],
         isLoading,
         error,
         mutate,
@@ -88,17 +88,17 @@ export const useCategories = () => {
 export const useAllUsers = () => {
     const { data, isLoading, mutate, error } = useSWR<User[]>('allUsers', fetcher);
     const updateUser = React.useCallback(async (id: string, userData: Partial<User>) => {
-        const optimisticData = data?.map(u => u.id === id ? { ...u, ...userData } : u) || [];
+        const optimisticData = (data || []).map(u => u.id === id ? { ...u, ...userData } : u);
         await mutate(DataActions.upsertUser({ id, ...userData }), { optimisticData, revalidate: false });
     }, [data, mutate]);
 
     const deleteStudent = React.useCallback(async (id: string) => {
-        const optimisticData = data?.filter(u => u.id !== id);
+        const optimisticData = (data || []).filter(u => u.id !== id);
         await mutate(DataActions.removeStudent(id), { optimisticData, revalidate: false });
     }, [data, mutate]);
 
     return {
-        allUsers: data,
+        allUsers: data || [],
         isLoading,
         error,
         updateUser,
@@ -110,7 +110,7 @@ export const useAllUsers = () => {
 export const useStudents = () => {
     const { allUsers, isLoading, deleteStudent: deleteUserAction, error } = useAllUsers();
     
-    const students = React.useMemo(() => allUsers?.filter(u => u.role === 'student'), [allUsers]);
+    const students = React.useMemo(() => (allUsers || []).filter(u => u.role === 'student'), [allUsers]);
 
     const deleteStudent = React.useCallback(async (id: string) => {
         await deleteUserAction(id);
@@ -129,26 +129,29 @@ export const useResults = () => {
     const { data, error, isLoading, mutate } = useSWR<Result[]>('results', fetcher);
     
      const updateItem = React.useCallback(async (result: Omit<Result, 'id'>): Promise<Result> => {
-        const newResult = await DataActions.upsertResult(result);
+        const savedResult = await DataActions.upsertResult(result);
+        
         await mutate(
             (currentData) => {
-                if (!currentData) return [newResult];
-                const index = currentData.findIndex(r => r.testId === newResult.testId && r.userId === newResult.userId);
+                const results = Array.isArray(currentData) ? currentData : [];
+                const index = results.findIndex(r => r.testId === savedResult.testId && r.userId === savedResult.userId);
+                
                 if (index !== -1) {
-                    const updatedData = [...currentData];
-                    updatedData[index] = newResult;
+                    const updatedData = [...results];
+                    updatedData[index] = savedResult;
                     return updatedData;
+                } else {
+                    return [...results, savedResult];
                 }
-                return [...currentData, newResult];
             }, 
             { revalidate: true }
         ); 
-        return newResult;
+        return savedResult;
     }, [mutate]);
 
 
     return { 
-        data, 
+        data: data || [], 
         isLoading, 
         error, 
         updateItem
@@ -157,16 +160,17 @@ export const useResults = () => {
 
 export const useReports = () => {
     const { data, error, isLoading, mutate } = useSWR<Report[]>('reports', fetcher);
+    
     const updateItem = React.useCallback(async (report: Report) => {
-        const optimisticData = data?.map(r => r.id === report.id ? report : r) || [report];
-        if (!data?.some(r => r.id === report.id)) {
+        const optimisticData = (data || []).map(r => r.id === report.id ? report : r);
+        if (!(data || []).some(r => r.id === report.id)) {
             optimisticData.push(report);
         }
         await mutate(DataActions.upsertReport(report), { optimisticData, revalidate: false });
     }, [data, mutate]);
     
     return { 
-        data, 
+        data: data || [], 
         isLoading, 
         error, 
         updateItem
@@ -177,23 +181,33 @@ export const useChatThreads = () => {
     const { data, error, isLoading, mutate } = useSWR<ChatThread[]>('chatThreads', fetcher);
 
     const updateItem = React.useCallback(async (thread: ChatThread) => {
-        const optimisticData = [...(Array.isArray(data) ? data : [])];
-        const index = optimisticData.findIndex(c => c.id === thread.id);
-        if (index > -1) {
-            optimisticData[index] = thread;
-        } else {
-            optimisticData.push(thread);
-        }
-        await mutate(DataActions.upsertChatThread(thread), { optimisticData, revalidate: false });
-    }, [mutate, data]);
+        // --- This is the new, stable logic ---
+        // 1. Update the local cache instantly for a smooth UI update.
+        mutate(
+            (cachedData: ChatThread[] | undefined) => {
+                const currentThreads = cachedData || [];
+                const index = currentThreads.findIndex(c => c.id === thread.id);
+                if (index > -1) {
+                    const updatedThreads = [...currentThreads];
+                    updatedThreads[index] = thread;
+                    return updatedThreads;
+                }
+                return [...currentThreads, thread];
+            }, 
+            false // IMPORTANT: Do not revalidate immediately.
+        );
+
+        // 2. Call the server action in the background. SWR will handle revalidation later if needed.
+        await DataActions.upsertChatThread(thread);
+    }, [mutate]);
 
     const deleteItem = React.useCallback(async (id: string) => {
-        const optimisticData = data?.filter(t => t.studentId !== id);
+        const optimisticData = (data || []).filter(t => t.studentId !== id);
         await mutate(DataActions.removeChatThread(id), { optimisticData, revalidate: false });
     }, [data, mutate]);
     
     return {
-        data,
+        data: data || [],
         isLoading,
         error,
         updateItem,
@@ -218,25 +232,34 @@ export const useSarthiBotConversations = () => {
     const { data, error, isLoading, mutate } = useSWR<SarthiBotConversation[]>('sarthiBotConversations', fetcher);
 
     const updateSarthiBotConversation = React.useCallback(async (conversation: SarthiBotConversation) => {
-        const optimisticData = [...(Array.isArray(data) ? data : [])];
-        const index = optimisticData.findIndex(c => c.id === conversation.id);
+       // --- This is the new, stable logic ---
+        // 1. Update the local cache instantly for a smooth UI update.
+        mutate(
+            (cachedData: SarthiBotConversation[] | undefined) => {
+                const currentConversations = cachedData || [];
+                const index = currentConversations.findIndex(c => c.id === conversation.id);
+                if (index > -1) {
+                    const updatedConversations = [...currentConversations];
+                    updatedConversations[index] = conversation;
+                    return updatedConversations;
+                }
+                return [...currentConversations, conversation];
+            }, 
+            false // IMPORTANT: Do not revalidate immediately.
+        );
+        
+        // 2. Call the server action in the background.
+        await DataActions.upsertSarthiBotConversation(conversation);
+    }, [mutate]);
 
-        if (index > -1) {
-            optimisticData[index] = conversation;
-        } else {
-            optimisticData.push(conversation);
-        }
-
-        await mutate(DataActions.upsertSarthiBotConversation(conversation), { optimisticData, revalidate: false });
-    }, [mutate, data]);
 
     const deleteSarthiBotConversation = React.useCallback(async (id: string) => {
-        const optimisticData = data?.filter(c => c.studentId !== id);
+        const optimisticData = (data || []).filter(c => c.studentId !== id);
         await mutate(DataActions.removeSarthiBotConversation(id), { optimisticData, revalidate: false });
     }, [data, mutate]);
 
      return {
-        conversations: data,
+        conversations: data || [],
         isLoading,
         error,
         updateSarthiBotConversation,

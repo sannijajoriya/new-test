@@ -202,7 +202,7 @@ function SarthiBotManager() {
                 botAvatarUrl: settings.botAvatarUrl || '',
             });
         }
-    }, [settings, form]);
+    }, [settings]); // Removed form from dependency array to prevent infinite loop
     
     const handleAddOrUpdateTrainingItem = () => {
         if (!newQuestion.trim() || !newAnswer.trim()) {
@@ -645,5 +645,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

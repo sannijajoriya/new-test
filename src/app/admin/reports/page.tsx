@@ -25,7 +25,8 @@ function ReportsPanel() {
     }, [updateReport]);
     
     const sortedReports = useMemo(() => {
-        return [...(reports || [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        if (!Array.isArray(reports)) return [];
+        return [...reports].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }, [reports]);
 
     const filteredReports = sortedReports.filter(report =>

@@ -4,15 +4,16 @@
 import { useState, useEffect } from 'react';
 import { AuthGuard } from '@/components/auth-guard';
 import { SarthiBotPanel } from '@/components/sarthi-bot-panel';
-import { StudentChatPanel } from '@/components/student-chat-panel';
-import { useSiteSettings } from '@/hooks/use-data';
-import { useAdminUser } from '@/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BrainCircuit, ArrowLeft } from 'lucide-react';
+import { BrainCircuit, ArrowLeft, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { FullScreenImageViewer } from '@/components/full-screen-image-viewer';
+import { useSiteSettings } from '@/hooks/use-data';
+import { useAdminUser } from '@/hooks/use-auth';
+import { ChatPanel } from '@/components/chat-panel';
+
 
 function ContactPageContent() {
     const { settings } = useSiteSettings();
@@ -26,14 +27,16 @@ function ContactPageContent() {
             name: settings?.botName || 'UdaanSarthi AI',
             avatar: settings?.botAvatarUrl,
             fallback: <BrainCircuit />,
-            status: '🤖 AI Assistant'
+            status: '🤖 AI Assistant',
+            enabled: settings?.isBotEnabled,
         },
         {
             id: 'admin' as const,
             name: adminUser?.fullName || 'Admin',
             avatar: adminUser?.profilePictureUrl,
             fallback: adminUser?.fullName?.charAt(0) || 'A',
-            status: 'Typically replies within a few hours'
+            status: 'Typically replies within a few hours',
+            enabled: true,
         }
     ];
 
@@ -41,8 +44,13 @@ function ContactPageContent() {
     
     const renderListView = () => (
          <Card className="w-full max-w-md mx-auto rounded-2xl shadow-lg">
-            <CardContent className="p-4 space-y-3">
+             <CardContent className="p-4 space-y-3">
+                 <div className="text-center p-2 mb-2">
+                     <h2 className="text-2xl font-bold">Contact Support</h2>
+                     <p className="text-muted-foreground">Choose who you want to talk to.</p>
+                 </div>
                 {chatContacts.map(contact => (
+                    contact.enabled ? (
                     <div
                         key={contact.id}
                         onClick={() => setActiveView(contact.id)}
@@ -60,6 +68,7 @@ function ContactPageContent() {
                             <p className="text-xs text-muted-foreground">{contact.status}</p>
                         </div>
                     </div>
+                    ) : null
                 ))}
             </CardContent>
         </Card>
@@ -73,7 +82,7 @@ function ContactPageContent() {
                 </Button>
             </div>
             <div className="h-full min-h-[70vh] rounded-2xl shadow-lg overflow-hidden bg-background flex-grow">
-                {activeView === 'admin' && <StudentChatPanel className="h-full border-none shadow-none rounded-none bg-transparent" />}
+                {activeView === 'admin' && <ChatPanel className="h-full border-none shadow-none rounded-none bg-transparent" />}
                 {activeView === 'bot' && <SarthiBotPanel className="h-full border-none shadow-none rounded-none bg-transparent" />}
             </div>
         </div>
@@ -82,7 +91,7 @@ function ContactPageContent() {
 
     return (
         <>
-            <div className="h-full flex-grow flex flex-col">
+            <div className="h-full flex-grow flex flex-col justify-center">
                 {activeView === 'list' ? renderListView() : renderChatView()}
             </div>
              <FullScreenImageViewer

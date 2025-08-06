@@ -13,6 +13,7 @@ import { FloatingChatButton } from '@/components/floating-chat-button';
 export const metadata: Metadata = {
   title: 'UdaanSarthi - Your Trusted Guide for Every Exam Journey',
   description: 'AI-powered test preparation platform for competitive exams. Guided by AI. Designed for Results.',
+  keywords: ['UdaanSarthi', 'Test Series', 'Rajasthan GK', 'REET', 'RPSC', 'Online Test', 'AI Learning', 'Exam Preparation'],
 };
 
 export default function RootLayout({

@@ -70,7 +70,7 @@ type CategoryFormData = z.infer<typeof categorySchema>;
 
 
 function ExistingTestsTable({ tests, categories, onEdit, onDelete }: { tests: Test[], categories: Category[], onEdit: (test: Test) => void, onDelete: (test: Test) => void }) {
-    if (tests.length === 0) {
+    if (!tests || tests.length === 0) {
         return (
             <CardContent>
                 <p className="text-muted-foreground py-8 text-center">No tests found in this category. Add one using the forms below!</p>
@@ -78,7 +78,7 @@ function ExistingTestsTable({ tests, categories, onEdit, onDelete }: { tests: Te
         );
     }
 
-    const getCategoryName = (categoryId?: string) => {
+    const getCategoryName = (categoryId?: string | null) => {
         if (!categoryId) return 'Uncategorized';
         return categories.find(c => c.id === categoryId)?.name || 'Uncategorized';
     }
@@ -134,7 +134,7 @@ function EditTestDialog({ test, isOpen, onClose, onSave, categories }: { test: T
                 marksPerCorrect: test.marksPerCorrect || 1,
                 negativeMarksPerWrong: test.negativeMarksPerWrong || 0,
                 guidelines: test.guidelines || '',
-                categoryId: test.categoryId,
+                categoryId: test.categoryId || '',
                 questions: test.questions.map(q => ({
                     id: q.id,
                     text: q.text,
@@ -814,9 +814,9 @@ export default function ManageTestsPage() {
   };
 
   const uncategorizedTests = useMemo(() => {
-    if (!tests || !categories) return [];
-    const categorizedIds = new Set((categories || []).map(c => c.id));
-    return (tests || []).filter(t => !t.categoryId || !categorizedIds.has(t.categoryId));
+    if (!Array.isArray(tests) || !Array.isArray(categories)) return [];
+    const categorizedIds = new Set(categories.map(c => c.id));
+    return tests.filter(t => !t.categoryId || !categorizedIds.has(t.categoryId));
   }, [tests, categories]);
 
   const handleSelectCategory = (category: Category) => {

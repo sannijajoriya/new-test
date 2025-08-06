@@ -74,7 +74,7 @@ function ChatPanel() {
     });
 
     const sortedThreads = useMemo(() => {
-        if (!chatThreads) return [];
+        if (!Array.isArray(chatThreads)) return [];
         return [...chatThreads].sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
     }, [chatThreads]);
 

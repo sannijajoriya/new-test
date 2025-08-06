@@ -5,7 +5,7 @@ import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth, useUser } from '@/hooks/use-auth';
-import { Menu, LogOut, User as UserIcon, Shield, LayoutDashboard, KeyRound, MessageSquare, ListChecks } from 'lucide-react';
+import { Menu, LogOut, User as UserIcon, Shield, LayoutDashboard, KeyRound, MessageSquare, ListChecks, Flag } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { ThemeToggle } from './theme-toggle';
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -56,7 +56,7 @@ function UserNav({ user, logout }: { user: User, logout: () => void }) {
                 <Link href="/profile"><UserIcon />Update Profile</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard?tab=reports"><ListChecks />My Reports</Link>
+                <Link href="/my-objections"><Flag />My Objections</Link>
               </DropdownMenuItem>
             </>
           )}
@@ -127,7 +127,7 @@ const MobileNavLinks = ({ user, logout }: { user: User, logout: () => void }) =>
                  <Button variant="ghost" asChild className={linkClass}><Link href="/contact"><MessageSquare />Live Chat</Link></Button>
              </SheetClose>
              <SheetClose asChild>
-                 <Button variant="ghost" asChild className={linkClass}><Link href="/dashboard?tab=reports"><ListChecks />My Reports</Link></Button>
+                 <Button variant="ghost" asChild className={linkClass}><Link href="/my-objections"><Flag />My Objections</Link></Button>
              </SheetClose>
         </>
         ) : (
@@ -180,11 +180,7 @@ export function Header() {
           <Skeleton className="h-10 w-24" />
         ) : (
           <div className="flex items-center gap-2">
-            {/* Desktop and Mobile Live Chat */}
-            {user && user.role === 'student' && (
-              <Button variant="ghost" asChild className="hidden sm:inline-flex"><Link href="/contact">Live Chat</Link></Button>
-            )}
-             {user && user.role === 'admin' && (
+            {user && user.role === 'admin' && (
               <Button variant="ghost" asChild className="hidden md:inline-flex relative">
                 <Link href="/admin/chat">
                     Student Chat
@@ -195,7 +191,6 @@ export function Header() {
               </Button>
             )}
 
-            {/* Desktop Guest Links */}
             {!user && <div className="hidden md:flex"><GuestNavLinks /></div>}
             
             <ThemeToggle />
@@ -214,7 +209,6 @@ export function Header() {
              ) : null}
 
 
-            {/* Mobile Navigation */}
             <div className="md:hidden">
               <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                   <SheetTrigger asChild>
