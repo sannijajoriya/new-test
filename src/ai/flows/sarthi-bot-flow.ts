@@ -78,17 +78,17 @@ const sarthiBotFlow = ai.defineFlow(
         systemPrompt += `\n\nHere is some specific information you MUST use to answer questions. If the user asks something similar to one of these questions, you should provide the given answer:\n${trainingBlock}`;
     }
     
-    const userMessageContent: ({text: string} | {media: {url: string}})[] = [];
+    const userMessageParts: ({text: string} | {media: {url: string}})[] = [];
     if (input.text) {
-        userMessageContent.push({ text: input.text });
+        userMessageParts.push({ text: input.text });
     }
     if (input.photoDataUri) {
-        userMessageContent.push({ media: { url: input.photoDataUri } });
+        userMessageParts.push({ media: { url: input.photoDataUri } });
     }
 
     const aicall_messages = [
         ...(input.history || []),
-        { role: 'user' as const, content: userMessageContent }
+        { role: 'user' as const, content: userMessageParts }
     ];
     
     // Ensure the conversation starts with a user message for the API
