@@ -6,51 +6,51 @@ generator client {
 }
 
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
-  directUrl         = env("DIRECT_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  directUrl    = env("DIRECT_URL")
 }
 
 model User {
-  id                String    @id @default(cuid())
+  id                String   @id @default(cuid())
   fullName          String
-  email             String    @unique
+  email             String   @unique
   password          String?
   profilePictureUrl String?
-  role              String    @default("student") // "student" or "admin"
-  createdAt         DateTime  @default(now())
+  role              String   @default("student")
+  createdAt         DateTime @default(now())
+
   results           Result[]
   reports           Report[]
-  sarthiBotConvos   SarthiBotConversation[] @relation(fields: [id], references: [studentId])
+  sarthiBotConvos   SarthiBotConversation[]
   feedbacks         Feedback[]
-  chatThreads       ChatThread[]            @relation(fields: [id], references: [studentId])
-}
-
-model Category {
-  id             String  @id @default(cuid())
-  name           String  @unique
-  logoImageUrl   String?
-  bannerImageUrl String?
-  userCount      Int?
-  description    String?
-  languages      String?
-  features       Json?
-  tests          Test[]
+  chatThreads       ChatThread[]
 }
 
 model Test {
-  id                    String    @id @default(cuid())
+  id                    String     @id @default(cuid())
   title                 String
   duration              Int
-  questions             Json // Array of Question objects
-  marksPerCorrect       Int       @default(1)
-  negativeMarksPerWrong Int       @default(0)
+  questions             Json
+  marksPerCorrect       Int        @default(1)
+  negativeMarksPerWrong Int        @default(0)
   guidelines            String?
-  category              Category? @relation(fields: [categoryId], references: [id])
   categoryId            String?
+  category              Category?  @relation(fields: [categoryId], references: [id])
   results               Result[]
   reports               Report[]
+}
+
+model Category {
+  id              String  @id @default(cuid())
+  name            String  @unique
+  logoImageUrl    String?
+  bannerImageUrl  String?
+  userCount       Int?
+  description     String?
+  languages       String?
+  features        String[]
+  tests           Test[]
 }
 
 model Result {
@@ -64,16 +64,14 @@ model Result {
   timeTaken       Int
   answers         Json
   submittedAt     DateTime @default(now())
-
-  test Test @relation(fields: [testId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  test            Test     @relation(fields: [testId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
 
   @@unique([testId, userId])
 }
 
 model Report {
   id           String      @id @default(cuid())
-  createdAt    DateTime    @default(now())
   studentId    String
   studentName  String
   testId       String
@@ -82,22 +80,21 @@ model Report {
   questionText String
   reason       String
   remarks      String?
-  status       String      @default("pending") // "pending", "responded"
-  chat         Json // Array of ChatMessage objects
-
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  test    Test @relation(fields: [testId], references: [id], onDelete: Cascade)
+  status       String      @default("pending") // pending, responded
+  chat         Json        @default("[]")
+  createdAt    DateTime    @default(now())
+  student      User        @relation(fields: [studentId], references: [id])
+  test         Test        @relation(fields: [testId], references: [id])
 }
 
 model ChatThread {
   id            String   @id @default(cuid())
   studentId     String   @unique
   studentName   String
-  messages      Json // Array of DirectMessage objects
-  lastMessageAt DateTime
+  messages      Json     @default("[]")
+  lastMessageAt DateTime @default(now())
   seenByAdmin   Boolean  @default(false)
-
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student       User     @relation(fields: [studentId], references: [id])
 }
 
 model SarthiBotTrainingData {
@@ -110,10 +107,9 @@ model SarthiBotConversation {
   id           String   @id @default(cuid())
   studentId    String   @unique
   studentName  String
-  messages     Json // Array of SarthiBotMessage objects
-  lastMessageAt DateTime
-
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  messages     Json     @default("[]")
+  lastMessageAt DateTime @default(now())
+  student      User     @relation(fields: [studentId], references: [id])
 }
 
 model Feedback {
@@ -124,32 +120,31 @@ model Feedback {
   message    String
   photoUrl   String?
   createdAt  DateTime @default(now())
-  status     String   @default("pending") // "pending", "approved", "rejected"
+  status     String   @default("pending") // pending, approved, rejected
   order      Int?
+  student    User     @relation(fields: [studentId], references: [id])
+}
 
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+model SiteSettings {
+  id                       String                  @id @default("default")
+  logoUrl                  String?
+  botName                  String?
+  botAvatarUrl             String?
+  botIntroMessage          String?
+  isBotEnabled             Boolean?                @default(true)
+  isNewsBannerEnabled      Boolean?                @default(false)
+  newsBannerImageUrl       String?
+  newsBannerTitle          String?
+  newsBannerLink           String?
+  newsBannerDisplayRule    NewsBannerDisplayRule?  @default(SESSION)
+  heroBannerText           String?
+  isHeroBannerTextEnabled  Boolean?                @default(true)
+  heroBannerImageUrl       String?
+  heroBannerOverlayOpacity Float?                  @default(0.3)
+  adminChatAutoReply       String?
 }
 
 enum NewsBannerDisplayRule {
   ALWAYS
   SESSION
-}
-
-model SiteSettings {
-  id                       String                 @id @default("default")
-  logoUrl                  String?
-  botName                  String?
-  botAvatarUrl             String?
-  botIntroMessage          String?
-  isBotEnabled             Boolean?               @default(true)
-  isNewsBannerEnabled      Boolean?               @default(false)
-  newsBannerImageUrl       String?
-  newsBannerTitle          String?
-  newsBannerLink           String?
-  newsBannerDisplayRule    NewsBannerDisplayRule? @default(SESSION)
-  heroBannerText           String?
-  isHeroBannerTextEnabled  Boolean?               @default(true)
-  heroBannerImageUrl       String?
-  heroBannerOverlayOpacity Float?                 @default(0.3)
-  adminChatAutoReply       String?
 }
