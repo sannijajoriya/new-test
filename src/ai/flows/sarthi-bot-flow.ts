@@ -92,7 +92,6 @@ const sarthiBotFlow = ai.defineFlow(
         aicall_messages = aicall_messages.slice(1);
     }
 
-
     const {output} = await ai.generate({
         model: 'googleai/gemini-2.0-flash',
         system: systemPrompt,
