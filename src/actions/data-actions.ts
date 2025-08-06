@@ -40,7 +40,7 @@ export async function fetchResults(): Promise<Result[]> {
 
 export async function fetchReports(): Promise<Report[]> {
     const reports = await prisma.report.findMany();
-    return serialize(reports) as Report[];
+    return serialize(reports) as unknown as Report[];
 }
 
 export async function fetchChatThreads(): Promise<ChatThread[]> {
