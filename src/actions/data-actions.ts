@@ -30,7 +30,7 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 export async function fetchAllUsers(): Promise<User[]> {
-    return serialize(await prisma.user.findMany());
+    return serialize(await prisma.user.findMany()) as User[];
 }
 
 export async function fetchResults(): Promise<Result[]> {
