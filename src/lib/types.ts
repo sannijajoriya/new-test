@@ -103,7 +103,7 @@ export interface Feedback {
 }
 
 export interface SiteSettings {
-  id: 'default';
+  id: string;
   logoUrl?: string | null;
   botName?: string | null;
   botAvatarUrl?: string | null;
