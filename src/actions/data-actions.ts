@@ -8,20 +8,17 @@ import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainin
 
 const prisma = new PrismaClient();
 
-// Helper to handle JSON conversion for Prisma
+// Helper to handle JSON conversion for Prisma - no longer needed for fields that are now JSON type
 function serialize<T>(data: T): T {
-    // Using JSON.parse(JSON.stringify(...)) is a robust way to ensure deep conversion
-    // of any non-serializable values (like Date objects in nested structures) and to
-    // correctly type the complex JSON fields from Prisma.
-    return JSON.parse(JSON.stringify(data));
+    return JSON.parse(JSON.stringify(data, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+    ));
 }
 
 // Fetch Actions
 export async function fetchTests(): Promise<Test[]> {
   const tests = await prisma.test.findMany();
-  // The 'questions' field is of type Json. We must properly cast it.
-  // Using a helper function handles any potential complexities.
-  return serialize(tests) as unknown as Test[];
+  return tests as Test[];
 }
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -30,7 +27,7 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 export async function fetchAllUsers(): Promise<User[]> {
-    return serialize(await prisma.user.findMany()) as User[];
+    return serialize(await prisma.user.findMany());
 }
 
 export async function fetchResults(): Promise<Result[]> {
@@ -40,13 +37,12 @@ export async function fetchResults(): Promise<Result[]> {
 
 export async function fetchReports(): Promise<Report[]> {
     const reports = await prisma.report.findMany();
-    return serialize(reports) as unknown as Report[];
+    return reports as Report[];
 }
 
 export async function fetchChatThreads(): Promise<ChatThread[]> {
     const threads = await prisma.chatThread.findMany();
-    // The 'messages' field contains Date objects that need serialization.
-    return serialize(threads) as unknown as ChatThread[];
+    return threads as ChatThread[];
 }
 
 export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingData[]> {
@@ -55,7 +51,7 @@ export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingDat
 
 export async function fetchSarthiBotConversations(): Promise<SarthiBotConversation[]> {
     const convos = await prisma.sarthiBotConversation.findMany();
-    return serialize(convos) as unknown as SarthiBotConversation[];
+    return convos as SarthiBotConversation[];
 }
 
 export async function fetchStudentFeedbacks(): Promise<Feedback[]> {
