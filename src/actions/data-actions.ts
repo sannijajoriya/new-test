@@ -30,12 +30,12 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 export async function fetchAllUsers(): Promise<User[]> {
-    return serialize(await prisma.user.findMany()) as User[];
+    return serialize(await prisma.user.findMany()) as unknown as User[];
 }
 
 export async function fetchResults(): Promise<Result[]> {
     const results = await prisma.result.findMany();
-    return results as Result[];
+    return results as unknown as Result[];
 }
 
 export async function fetchReports(): Promise<Report[]> {
@@ -50,7 +50,7 @@ export async function fetchChatThreads(): Promise<ChatThread[]> {
 }
 
 export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingData[]> {
-    return serialize(await prisma.sarthiBotTrainingData.findMany());
+    return serialize(await prisma.sarthiBotTrainingData.findMany()) as unknown as SarthiBotTrainingData[];
 }
 
 export async function fetchSarthiBotConversations(): Promise<SarthiBotConversation[]> {
@@ -59,13 +59,13 @@ export async function fetchSarthiBotConversations(): Promise<SarthiBotConversati
 }
 
 export async function fetchStudentFeedbacks(): Promise<Feedback[]> {
-    return serialize(await prisma.feedback.findMany()) as Feedback[];
+    return serialize(await prisma.feedback.findMany()) as unknown as Feedback[];
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettings | null> {
     return serialize(await prisma.siteSettings.findUnique({ 
         where: { id: 'default' },
-    }));
+    })) as SiteSettings | null;
 }
 
 
@@ -85,14 +85,14 @@ export async function createUser(fullName: string, email: string, password: stri
             password: hashedPassword,
             role: userRole,
         }
-    }));
+    })) as unknown as User;
 }
 
 export async function verifyPassword(email: string, password: string): Promise<User | null> {
     const user = await prisma.user.findUnique({ where: { email } });
     if (user && user.password && await bcrypt.compare(password, user.password)) {
         const { password: _, ...userWithoutPassword } = user;
-        return serialize(userWithoutPassword as User);
+        return serialize(userWithoutPassword as User) as unknown as User;
     }
     return null;
 }
@@ -118,7 +118,7 @@ export async function upsertUser(data: Partial<User> & { id: string }) {
         where: { id: data.id },
         update: updateData,
         create: createData as any,
-    }));
+    })) as unknown as User;
 }
 
 export async function upsertTest(test: Test) {
@@ -127,7 +127,7 @@ export async function upsertTest(test: Test) {
         where: { id: test.id || 'new' },
         update: testData as any,
         create: testData as any,
-    }));
+    })) as unknown as Test;
 }
 
 export async function upsertCategory(category: Category) {
@@ -136,7 +136,7 @@ export async function upsertCategory(category: Category) {
         where: { id: category.id || 'new' },
         update: categoryData as any,
         create: categoryData as any,
-    }));
+    })) as unknown as Category;
 }
 
 export async function upsertResult(result: Omit<Result, 'id'>): Promise<Result> {
@@ -163,7 +163,7 @@ export async function upsertResult(result: Omit<Result, 'id'>): Promise<Result> 
             submittedAt: new Date(dataToUpsert.submittedAt), // Ensure date object on create
         },
     });
-    return serialize(createdOrUpdatedResult) as Result;
+    return serialize(createdOrUpdatedResult) as unknown as Result;
 }
 
 
@@ -173,7 +173,7 @@ export async function upsertReport(report: Report) {
         where: { id: report.id || 'new' },
         update: data as any,
         create: data as any,
-    }));
+    })) as unknown as Report;
 }
 
 export async function upsertChatThread(thread: ChatThread) {
@@ -186,12 +186,12 @@ export async function upsertChatThread(thread: ChatThread) {
         where: { studentId: thread.studentId },
         update: data as any,
         create: data as any,
-    }));
+    })) as unknown as ChatThread;
 }
 
 export async function saveSarthiBotTrainingData(data: SarthiBotTrainingData[]) {
     await prisma.sarthiBotTrainingData.deleteMany({});
-    return serialize(await prisma.sarthiBotTrainingData.createMany({ data }));
+    return serialize(await prisma.sarthiBotTrainingData.createMany({ data })) as unknown as SarthiBotTrainingData[];
 }
 
 export async function upsertSarthiBotConversation(conversation: SarthiBotConversation) {
@@ -200,7 +200,7 @@ export async function upsertSarthiBotConversation(conversation: SarthiBotConvers
         where: { studentId: conversation.studentId },
         update: data as any,
         create: data as any,
-    }));
+    })) as unknown as SarthiBotConversation;
 }
 
 export async function saveFeedbacks(feedbacks: Feedback[]) {
@@ -219,7 +219,7 @@ export async function upsertSiteSettings(settings: Partial<SiteSettings>) {
         where: { id: 'default' },
         update: settings,
         create: { ...settings, id: 'default' } as any,
-    }));
+    })) as unknown as SiteSettings;
 }
 
 // Delete Actions
