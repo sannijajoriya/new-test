@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React from 'react';
@@ -296,7 +295,18 @@ export const useSiteSettings = () => {
 
     const updateSettings = React.useCallback(async (newSettings: Partial<SiteSettings>) => {
         const optimisticData = { ...settings, ...newSettings };
-        await mutate(DataActions.upsertSiteSettings(newSettings), { optimisticData, revalidate: false });
+        
+        // Correct way to handle optimistic UI with SWR
+        // 1. Mutate locally without revalidation to show instant UI update
+        // 2. Trigger the async update
+        // 3. Let SWR handle revalidation upon completion by default (remove revalidate: false)
+        await mutate(DataActions.upsertSiteSettings(newSettings), {
+          optimisticData: optimisticData,
+          rollbackOnError: true,
+          populateCache: true,
+          revalidate: true, // This will refetch the data from the server after the update is complete.
+        });
+
     }, [settings, mutate]);
 
     return { settings, isLoading, error, updateSettings };
