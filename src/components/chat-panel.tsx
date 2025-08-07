@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, Suspense, useMemo } from 'react';
-import type { ChatThread, DirectMessage } from '@/lib/types';
+import type { ChatThread, DirectMessage, User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,7 +42,7 @@ function ChatMessageDisplay({ msg }: { msg: DirectMessage }) {
         <div className={cn("flex items-end gap-2", isStudent ? "justify-end" : "justify-start")}>
             {!isStudent && userToShow && (
                 <Avatar className="h-8 w-8 cursor-pointer" onClick={() => { if(userToShow.profilePictureUrl) setViewingImage(userToShow.profilePictureUrl); }}>
-                    <AvatarImage src={userToShow.profilePictureUrl} alt={userToShow.fullName} />
+                    <AvatarImage src={userToShow.profilePictureUrl || undefined} alt={userToShow.fullName} />
                     <AvatarFallback>{userToShow.fullName?.charAt(0) || 'A'}</AvatarFallback>
                 </Avatar>
             )}
@@ -55,7 +55,7 @@ function ChatMessageDisplay({ msg }: { msg: DirectMessage }) {
             </div>
             {isStudent && userToShow && (
                 <Avatar className="h-8 w-8 cursor-pointer" onClick={() => { if(userToShow.profilePictureUrl) setViewingImage(userToShow.profilePictureUrl); }}>
-                    <AvatarImage src={userToShow.profilePictureUrl} alt={userToShow.fullName} />
+                    <AvatarImage src={userToShow.profilePictureUrl || undefined} alt={userToShow.fullName} />
                     <AvatarFallback>{userToShow.fullName?.charAt(0)}</AvatarFallback>
                 </Avatar>
             )}
@@ -150,7 +150,7 @@ function ChatPanelComponent({ className, showHeader = true }: { className?: stri
                     <CardHeader className="flex flex-row items-center justify-between p-3 border-b bg-card/80">
                         <div className="flex items-center gap-3">
                             <Avatar>
-                                <AvatarImage src={adminUser.profilePictureUrl} alt={adminUser.fullName}/>
+                                <AvatarImage src={adminUser.profilePictureUrl || undefined} alt={adminUser.fullName}/>
                                 <AvatarFallback>{adminUser.fullName?.charAt(0) || 'A'}</AvatarFallback>
                             </Avatar>
                             <div>
