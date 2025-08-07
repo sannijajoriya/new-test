@@ -101,7 +101,7 @@ function TestSeriesList() {
                     )}
                     <div className="flex justify-between items-center p-4">
                         <Avatar className="h-12 w-12 border-2 border-primary/20">
-                            <AvatarImage src={category.logoImageUrl} alt={category.name} data-ai-hint="logo company" />
+                            <AvatarImage src={category.logoImageUrl || undefined} alt={category.name} data-ai-hint="logo company" />
                             <AvatarFallback>{category.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         {category.userCount && (
@@ -236,10 +236,18 @@ function DashboardContent() {
             <TabsTrigger value="progress">My Progress</TabsTrigger>
         </TabsList>
         <TabsContent value="series" className="pt-6">
+           <Suspense fallback={
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-96 w-full" />)}
+            </div>
+           }>
             <TestSeriesList />
+           </Suspense>
         </TabsContent>
         <TabsContent value="progress" className="pt-6">
-            <MyProgressTab />
+            <Suspense fallback={<Card><CardContent><Skeleton className="h-64 w-full" /></CardContent></Card>}>
+              <MyProgressTab />
+            </Suspense>
         </TabsContent>
       </Tabs>
 
