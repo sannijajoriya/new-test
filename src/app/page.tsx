@@ -65,9 +65,8 @@ export default function HomePage() {
                     <Image 
                         src={settings.heroBannerImageUrl}
                         alt="A student's journey towards success" 
-                        layout="fill"
-                        objectFit="cover"
-                        className="object-center"
+                        fill
+                        className="object-cover"
                         data-ai-hint="student journey achievement"
                         priority
                     />
