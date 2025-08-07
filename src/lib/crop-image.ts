@@ -40,6 +40,6 @@ export default async function getCroppedImg(
   );
 
 
-  // As a blob
+  // As a PNG to preserve transparency
   return canvas.toDataURL('image/png');
 }
