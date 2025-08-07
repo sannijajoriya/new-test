@@ -143,12 +143,12 @@ function ChatPanel() {
     const getStudentData = (studentId: string) => allUsers?.find(u => u.id === studentId);
 
     return (
-        <div className="space-y-6">
-             <div className="space-y-2">
+        <div className="flex flex-col h-[calc(100vh-theme(space.24))] space-y-6">
+             <div className="space-y-2 flex-shrink-0">
                 <h1 className="text-3xl font-bold">Student Chat</h1>
                 <p className="text-muted-foreground">Respond to messages from students.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow overflow-hidden">
                 <Card className="md:col-span-1 flex flex-col">
                     <CardHeader>
                         <CardTitle>Conversations</CardTitle>
@@ -199,7 +199,7 @@ function ChatPanel() {
                 <Card className="md:col-span-2 flex flex-col h-full">
                     {selectedThread ? (
                         <>
-                         <CardHeader className="border-b">
+                         <CardHeader className="border-b flex-shrink-0">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <CardTitle>{selectedThread.studentName}</CardTitle>
@@ -222,7 +222,7 @@ function ChatPanel() {
                                 </div>
                             </ScrollArea>
                          </CardContent>
-                         <CardFooter className="pt-4 border-t">
+                         <CardFooter className="pt-4 border-t flex-shrink-0">
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(handleSendMessage)} className="flex w-full items-start gap-2">
                                     <FormField
