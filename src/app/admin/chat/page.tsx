@@ -27,7 +27,7 @@ const chatSchema = z.object({
 type ChatForm = z.infer<typeof chatSchema>;
 
 
-function ChatMessageDisplay({ msg, student, adminUser }: { msg: DirectMessage, student: User | undefined, adminUser: User | null }) {
+function ChatMessageDisplay({ msg, student, adminUser }: { msg: DirectMessage, student: User | null | undefined, adminUser: User | null }) {
     const formattedTime = useFormattedTimestamp(msg.timestamp);
     
     return (
