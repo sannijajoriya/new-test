@@ -47,7 +47,7 @@ export default function HomePage() {
     },
   ];
 
-  const heroText = settings?.heroBannerText || '\n';
+  const heroText = settings?.heroBannerText || '';
   const [title, ...subtitles] = heroText.split('\n');
 
   return (
@@ -57,15 +57,16 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="text-center flex flex-col items-center">
          <div className="relative w-full rounded-2xl overflow-hidden bg-muted/30 aspect-[4/3] md:aspect-[2.5/1]">
-             {isLoading ? (
+             {isLoading || !settings.heroBannerImageUrl ? (
                 <Skeleton className="h-full w-full" />
              ) : (
                 <>
                 <Image 
-                    src={settings.heroBannerImageUrl || "https://placehold.co/1200x480.png"}
+                    src={settings.heroBannerImageUrl}
                     alt="A student's journey towards success" 
                     layout="fill"
                     objectFit="cover"
+                    className="object-center"
                     data-ai-hint="student journey achievement"
                     priority
                 />
@@ -73,7 +74,7 @@ export default function HomePage() {
                     className="absolute inset-0 flex flex-col items-center justify-center text-white p-4"
                     style={{ backgroundColor: `rgba(0, 0, 0, ${settings.heroBannerOverlayOpacity ?? 0})` }}
                 >
-                    {settings.isHeroBannerTextEnabled && (
+                    {settings.isHeroBannerTextEnabled && heroText && (
                         <div className="text-center">
                             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-amber-50 to-blue-300 drop-shadow-lg whitespace-pre-wrap">
                                 {title}
