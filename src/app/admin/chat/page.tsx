@@ -34,12 +34,12 @@ function ChatMessageDisplay({ msg, student, adminUser }: { msg: DirectMessage, s
          <div className={cn("flex items-end gap-2", msg.sender === 'admin' ? "justify-end" : "justify-start")}>
             {msg.sender === 'student' ? (
                 student && <Avatar className="h-8 w-8">
-                    <AvatarImage src={student?.profilePictureUrl} alt={student?.fullName} />
+                    <AvatarImage src={student?.profilePictureUrl || undefined} alt={student?.fullName} />
                     <AvatarFallback>{student?.fullName.charAt(0)}</AvatarFallback>
                 </Avatar>
             ) : (
                 adminUser && <Avatar className="h-8 w-8">
-                    <AvatarImage src={adminUser?.profilePictureUrl} alt={adminUser?.fullName} />
+                    <AvatarImage src={adminUser?.profilePictureUrl || undefined} alt={adminUser?.fullName || 'Admin'} />
                     <AvatarFallback>{adminUser?.fullName?.charAt(0) || 'A'}</AvatarFallback>
                 </Avatar>
             )}
