@@ -25,13 +25,22 @@ const fetcher = async (key: string) => {
 };
 
 const defaultSiteSettings: SiteSettings = {
-    id: 'default', logoUrl: '', botName: 'UdaanSarthi Bot', botAvatarUrl: '',
+    id: 'default',
+    logoUrl: null,
+    botName: 'UdaanSarthi Bot',
+    botAvatarUrl: null,
     botIntroMessage: 'नमस्ते! मैं उड़ान सारथी हूँ। मैं आपकी पढ़ाई में कैसे मदद कर सकता हूँ?',
-    isBotEnabled: true, isNewsBannerEnabled: false, newsBannerImageUrl: '', newsBannerTitle: '',
-    newsBannerLink: '', newsBannerDisplayRule: 'SESSION',
-    heroBannerText: '',
-    isHeroBannerTextEnabled: true, heroBannerImageUrl: '',
-    heroBannerOverlayOpacity: 0.3, adminChatAutoReply: "Thanks for reaching out! An admin will get back to you as soon as possible.",
+    isBotEnabled: true,
+    isNewsBannerEnabled: false,
+    newsBannerImageUrl: null,
+    newsBannerTitle: null,
+    newsBannerLink: null,
+    newsBannerDisplayRule: 'SESSION',
+    heroBannerText: null,
+    isHeroBannerTextEnabled: false,
+    heroBannerImageUrl: null,
+    heroBannerOverlayOpacity: 0,
+    adminChatAutoReply: "Thanks for reaching out! An admin will get back to you as soon as possible.",
 };
 
 
@@ -287,8 +296,7 @@ export const useSiteSettings = () => {
 
     const updateSettings = React.useCallback(async (newSettings: Partial<SiteSettings>) => {
         const optimisticData = { ...settings, ...newSettings };
-        const options = { optimisticData, revalidate: false };
-        await mutate(DataActions.upsertSiteSettings(newSettings), options as any);
+        await mutate(DataActions.upsertSiteSettings(newSettings), { optimisticData, revalidate: false });
     }, [settings, mutate]);
 
     return { settings, isLoading, error, updateSettings };
@@ -296,5 +304,3 @@ export const useSiteSettings = () => {
 
 // Re-export useUser and useAdminUser from use-auth to colocate all data hooks
 export { useUser, useAdminUser } from '@/hooks/use-auth';
-
-    
