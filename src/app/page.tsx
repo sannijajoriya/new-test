@@ -57,19 +57,21 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="text-center flex flex-col items-center">
          <div className="relative w-full rounded-2xl overflow-hidden bg-muted/30 aspect-[4/3] md:aspect-[2.5/1]">
-             {isLoading || !settings.heroBannerImageUrl ? (
+             {isLoading ? (
                 <Skeleton className="h-full w-full" />
              ) : (
                 <>
-                <Image 
-                    src={settings.heroBannerImageUrl}
-                    alt="A student's journey towards success" 
-                    layout="fill"
-                    objectFit="cover"
-                    className="object-center"
-                    data-ai-hint="student journey achievement"
-                    priority
-                />
+                {settings.heroBannerImageUrl && (
+                    <Image 
+                        src={settings.heroBannerImageUrl}
+                        alt="A student's journey towards success" 
+                        layout="fill"
+                        objectFit="cover"
+                        className="object-center"
+                        data-ai-hint="student journey achievement"
+                        priority
+                    />
+                )}
                 <div 
                     className="absolute inset-0 flex flex-col items-center justify-center text-white p-4"
                     style={{ backgroundColor: `rgba(0, 0, 0, ${settings.heroBannerOverlayOpacity ?? 0})` }}
