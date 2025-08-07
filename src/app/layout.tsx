@@ -12,24 +12,20 @@ import { FloatingChatButton } from '@/components/floating-chat-button';
 
 export const metadata: Metadata = {
   title: 'UdaanSarthi - राजस्थान की हर परीक्षा का भरोसेमंद साथी',
-  description: 'UdaanSarthi पर मिले राजस्थान की हर बड़ी परीक्षा जैसे 4th ग्रेड, पटवारी, REET, CET, पुलिस और लैब असिस्टेंट के लिए सटीक और दमदार टेस्ट सीरीज़। टॉपिक-वाइज और सब्जेक्ट-वाइज मॉक टेस्ट्स, एकदम असली पेपर के पैटर्न पर। तैयारी वहीं से शुरू होती है जहाँ भरोसा होता है — UdaanSarthi।'
+  description: 'UdaanSarthi पर मिले राजस्थान की हर बड़ी परीक्षा जैसे 4th ग्रेड, पटवारी, REET, CET, पुलिस और लैब असिस्टेंट के लिए सटीक और दमदार टेस्ट सीरीज़। टॉपिक-वाइज और सब्जेक्ट-वाइज मॉक टेस्ट्स, एकदम असली पेपर के पैटर्न पर। तैयारी वहीं से शुरू होती है जहाँ भरोसा होता है — UdaanSarthi।',
   keywords: [
     'UdaanSarthi',
     'Rajasthan Test Series',
     '4th Grade Test Rajasthan',
     'Patwari Mock Test',
-    'REET Online Test',
-    'CET Rajasthan Test Series',
-    'Rajasthan Police Constable Test',
-    'Lab Assistant Test Series Rajasthan',
-    'RPSC Online Test',
-    'Topic Wise Test Series Rajasthan',
-    'Subject Wise Test Series Rajasthan',
-    'Online Mock Test Rajasthan Exams',
-    'Best Rajasthan Test Platform',
-    'UdaanSarthi Preparation'
-  ],
-};
+    'CET Rajasthan',
+    'REET Practice',
+    'Lab Assistant',
+    'Rajasthan Police',
+    'Mock Test Rajasthan'
+  ]
+}
+
 
 export default function RootLayout({
   children,
