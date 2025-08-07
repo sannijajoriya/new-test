@@ -19,30 +19,27 @@ export default async function getCroppedImg(
     throw new Error('Could not get canvas context');
   }
 
-  const safeArea = Math.max(image.width, image.height) * 2;
+  // The rotation is disabled for simplicity. If rotation is needed, it should be re-implemented.
+  const canvasWidth = pixelCrop.width;
+  const canvasHeight = pixelCrop.height;
 
-  canvas.width = safeArea;
-  canvas.height = safeArea;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
 
-  ctx.translate(safeArea / 2, safeArea / 2);
-  ctx.translate(-image.width / 2, -image.height / 2);
-
+  // Paste the cropped image onto the canvas
   ctx.drawImage(
     image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
     0,
-    0
+    0,
+    pixelCrop.width,
+    pixelCrop.height
   );
 
-  const data = ctx.getImageData(0, 0, safeArea, safeArea);
 
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
-
-  ctx.putImageData(
-    data,
-    Math.round(-safeArea / 2 + image.width / 2 - pixelCrop.x),
-    Math.round(-safeArea / 2 + image.height / 2 - pixelCrop.y)
-  );
-
-  return canvas.toDataURL('image/jpeg');
+  // As a blob
+  return canvas.toDataURL('image/png');
 }
