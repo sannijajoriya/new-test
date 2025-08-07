@@ -6,6 +6,7 @@ import { Users, FileText, Library, Flag, FilePenLine, MessageSquare, Settings, S
 import Link from 'next/link';
 import { useStudents, useTests, useCategories, useReports } from '@/hooks/use-data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Suspense } from 'react';
 
 function StatCard({ title, value, icon: Icon, link, isLoading }: { title: string, value: number, icon: React.ElementType, link: string, isLoading: boolean }) {
   return (
@@ -23,7 +24,7 @@ function StatCard({ title, value, icon: Icon, link, isLoading }: { title: string
   );
 }
 
-export default function AdminDashboardPage() {
+function StatCards() {
   const { students, isLoading: isLoadingStudents } = useStudents();
   const { data: tests, isLoading: isLoadingTests } = useTests();
   const { data: categories, isLoading: isLoadingCategories } = useCategories();
@@ -32,18 +33,18 @@ export default function AdminDashboardPage() {
   const isLoading = isLoadingStudents || isLoadingTests || isLoadingCategories || isLoadingReports;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">An overview of your platform's activity.</p>
-      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Students" value={students?.length || 0} icon={Users} link="/admin/students" isLoading={isLoading} />
         <StatCard title="Total Tests" value={tests?.length || 0} icon={FileText} link="/admin/tests" isLoading={isLoading} />
         <StatCard title="Total Categories" value={categories?.length || 0} icon={Library} link="/admin/tests" isLoading={isLoading} />
         <StatCard title="Total Reports" value={reports?.length || 0} icon={Flag} link="/admin/reports" isLoading={isLoading} />
       </div>
-       <Card>
+  )
+}
+
+function QuickActions() {
+    return (
+        <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
@@ -70,6 +71,27 @@ export default function AdminDashboardPage() {
             </Link>
           </CardContent>
        </Card>
+    )
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <p className="text-muted-foreground">An overview of your platform's activity.</p>
+      </div>
+      <Suspense fallback={
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+        </div>
+      }>
+        <StatCards />
+      </Suspense>
+       <QuickActions />
     </div>
   );
 }
