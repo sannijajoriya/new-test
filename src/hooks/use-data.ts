@@ -25,12 +25,12 @@ const fetcher = async (key: string) => {
 };
 
 const defaultSiteSettings: SiteSettings = {
-    id: 'default', logoUrl: '/logo.png', botName: 'UdaanSarthi Bot', botAvatarUrl: '',
+    id: 'default', logoUrl: '', botName: 'UdaanSarthi Bot', botAvatarUrl: '',
     botIntroMessage: 'नमस्ते! मैं उड़ान सारथी हूँ। मैं आपकी पढ़ाई में कैसे मदद कर सकता हूँ?',
     isBotEnabled: true, isNewsBannerEnabled: false, newsBannerImageUrl: '', newsBannerTitle: '',
-    newsBannerLink: '', newsBannerDisplayRule: 'session',
-    heroBannerText: 'Your Journey to Success Starts Here.\nGuided by AI. Designed for Results.',
-    isHeroBannerTextEnabled: true, heroBannerImageUrl: 'https://placehold.co/1200x480.png',
+    newsBannerLink: '', newsBannerDisplayRule: 'SESSION',
+    heroBannerText: '',
+    isHeroBannerTextEnabled: true, heroBannerImageUrl: '',
     heroBannerOverlayOpacity: 0.3, adminChatAutoReply: "Thanks for reaching out! An admin will get back to you as soon as possible.",
 };
 
