@@ -86,13 +86,19 @@ const sarthiBotFlow = ai.defineFlow(
         userMessageContent.push({media: {url: input.photoDataUri}});
     }
     
-    const aicall_messages: MessageData[] = [
-        ...(input.history || []).map(h => ({ role: h.role, content: h.content.flatMap(c => {
-            const parts = [];
-            if (c.text) parts.push({ text: c.text });
-            if (c.media) parts.push({ media: c.media });
+    // Correctly map the history to the expected MessageData format
+    const historyMessages: MessageData[] = (input.history || []).map(h => ({
+        role: h.role,
+        content: h.content.map(c => {
+            const parts: any = {};
+            if (c.text) parts.text = c.text;
+            if (c.media) parts.media = c.media;
             return parts;
-        })})),
+        })
+    }));
+
+    const aicall_messages: MessageData[] = [
+        ...historyMessages,
         { role: 'user' as const, content: userMessageContent }
     ];
     
