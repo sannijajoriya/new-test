@@ -17,14 +17,14 @@ export function NewsBannerPopup() {
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
-        if (typeof window === 'undefined' || isLoading) return;
+        if (typeof window === 'undefined' || isLoading || !settings) return;
 
-        if (!settings || !settings.isNewsBannerEnabled || !settings.newsBannerImageUrl) {
+        if (!settings.isNewsBannerEnabled || !settings.newsBannerImageUrl) {
             setIsOpen(false);
             return;
         }
 
-        if (settings.newsBannerDisplayRule === 'session') {
+        if (settings.newsBannerDisplayRule === 'SESSION') {
             const hasBeenClosed = sessionStorage.getItem(SESSION_STORAGE_KEY);
             if (hasBeenClosed) {
                 setIsOpen(false);
@@ -32,7 +32,7 @@ export function NewsBannerPopup() {
             }
         }
         
-        const timer = setTimeout(() => setIsOpen(true), 500);
+        const timer = setTimeout(() => setIsOpen(true), 1500); // Wait 1.5s before showing
         return () => clearTimeout(timer);
 
     }, [settings, isLoading]);
@@ -44,7 +44,7 @@ export function NewsBannerPopup() {
         }
     };
 
-    if (isLoading || !settings) {
+    if (isLoading || !settings || !isOpen) {
         return null;
     }
 
@@ -59,7 +59,7 @@ export function NewsBannerPopup() {
                         <X className="h-5 w-5" />
                         <span className="sr-only">Close</span>
                     </Button>
-                 </DialogClose>
+                </DialogClose>
                 
                 <div className="relative aspect-[2/1] w-full">
                     {settings.newsBannerImageUrl && (
