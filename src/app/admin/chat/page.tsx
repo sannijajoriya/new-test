@@ -34,7 +34,7 @@ function ChatMessageDisplay({ msg, student, adminUser }: { msg: DirectMessage, s
          <div className={cn("flex items-end gap-2", msg.sender === 'admin' ? "justify-end" : "justify-start")}>
             {msg.sender === 'student' ? (
                 student && <Avatar className="h-8 w-8">
-                    <AvatarImage src={student?.profilePictureUrl || undefined} alt={student?.fullName} />
+                    <AvatarImage src={student?.profilePictureUrl || undefined} alt={student?.fullName || ''} />
                     <AvatarFallback>{student?.fullName.charAt(0)}</AvatarFallback>
                 </Avatar>
             ) : (
@@ -93,9 +93,9 @@ function ChatPanel() {
 
     useEffect(() => {
         if (scrollAreaRef.current) {
-            const scrollableView = scrollAreaRef.current.querySelector('div');
-            if (scrollableView) {
-                 scrollableView.scrollTop = scrollableView.scrollHeight;
+            const scrollContainer = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+            if (scrollContainer) {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
             }
         }
     }, [selectedThread?.messages]);
@@ -148,7 +148,7 @@ function ChatPanel() {
                 <h1 className="text-3xl font-bold">Student Chat</h1>
                 <p className="text-muted-foreground">Respond to messages from students.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[75vh]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
                 <Card className="md:col-span-1 flex flex-col">
                     <CardHeader>
                         <CardTitle>Conversations</CardTitle>
@@ -196,7 +196,7 @@ function ChatPanel() {
                         </ScrollArea>
                     </CardContent>
                 </Card>
-                <Card className="md:col-span-2 flex flex-col">
+                <Card className="md:col-span-2 flex flex-col h-full">
                     {selectedThread ? (
                         <>
                          <CardHeader className="border-b">
