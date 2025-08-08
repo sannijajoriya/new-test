@@ -9,7 +9,6 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { LoadingProvider } from '@/hooks/use-loading';
 import { Loader } from '@/components/loader';
 import { FloatingChatButton } from '@/components/floating-chat-button';
-
 export const metadata: Metadata = {
   title: 'UdaanSarthi - राजस्थान की हर परीक्षा का भरोसेमंद साथी',
   description: 'UdaanSarthi पर मिले राजस्थान की हर बड़ी परीक्षा जैसे 4th ग्रेड, पटवारी, REET, CET, पुलिस और लैब असिस्टेंट के लिए सटीक और दमदार टेस्ट सीरीज़। टॉपिक-वाइज और सब्जेक्ट-वाइज मॉक टेस्ट्स, एकदम असली पेपर के पैटर्न पर। तैयारी वहीं से शुरू होती है जहाँ भरोसा होता है — UdaanSarthi।',
@@ -24,9 +23,10 @@ export const metadata: Metadata = {
     'Rajasthan Police',
     'Mock Test Rajasthan'
   ]
+   icons: {
+    icon: '/favicon.ico',
+  },
 }
-
-
 export default function RootLayout({
   children,
 }: Readonly<{
