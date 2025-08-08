@@ -8,17 +8,20 @@ import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainin
 
 const prisma = new PrismaClient();
 
-// Helper to handle JSON conversion for Prisma - no longer needed for fields that are now JSON type
+// Helper to handle JSON conversion for Prisma
 function serialize<T>(data: T): T {
-    return JSON.parse(JSON.stringify(data, (key, value) =>
-        typeof value === 'bigint' ? value.toString() : value
-    ));
+    // Using JSON.parse(JSON.stringify(...)) is a robust way to ensure deep conversion
+    // of any non-serializable values (like Date objects in nested structures) and to
+    // correctly type the complex JSON fields from Prisma.
+    return JSON.parse(JSON.stringify(data));
 }
 
 // Fetch Actions
 export async function fetchTests(): Promise<Test[]> {
   const tests = await prisma.test.findMany();
-  return tests as Test[];
+  // The 'questions' field is of type Json. We must properly cast it.
+  // Using a helper function handles any potential complexities.
+  return serialize(tests) as unknown as Test[];
 }
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -27,41 +30,42 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 export async function fetchAllUsers(): Promise<User[]> {
-    return serialize(await prisma.user.findMany());
+    return serialize(await prisma.user.findMany()) as unknown as User[];
 }
 
 export async function fetchResults(): Promise<Result[]> {
     const results = await prisma.result.findMany();
-    return results as Result[];
+    return results as unknown as Result[];
 }
 
 export async function fetchReports(): Promise<Report[]> {
     const reports = await prisma.report.findMany();
-    return reports as Report[];
+    return serialize(reports) as unknown as Report[];
 }
 
 export async function fetchChatThreads(): Promise<ChatThread[]> {
     const threads = await prisma.chatThread.findMany();
-    return threads as ChatThread[];
+    // The 'messages' field contains Date objects that need serialization.
+    return serialize(threads) as unknown as ChatThread[];
 }
 
 export async function fetchSarthiBotTrainingData(): Promise<SarthiBotTrainingData[]> {
-    return serialize(await prisma.sarthiBotTrainingData.findMany());
+    return serialize(await prisma.sarthiBotTrainingData.findMany()) as unknown as SarthiBotTrainingData[];
 }
 
 export async function fetchSarthiBotConversations(): Promise<SarthiBotConversation[]> {
     const convos = await prisma.sarthiBotConversation.findMany();
-    return convos as SarthiBotConversation[];
+    return serialize(convos) as unknown as SarthiBotConversation[];
 }
 
 export async function fetchStudentFeedbacks(): Promise<Feedback[]> {
-    return serialize(await prisma.feedback.findMany());
+    return serialize(await prisma.feedback.findMany()) as unknown as Feedback[];
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettings | null> {
     return serialize(await prisma.siteSettings.findUnique({ 
         where: { id: 'default' },
-    }));
+    })) as SiteSettings | null;
 }
 
 
@@ -81,40 +85,36 @@ export async function createUser(fullName: string, email: string, password: stri
             password: hashedPassword,
             role: userRole,
         }
-    }));
+    })) as unknown as User;
 }
 
 export async function verifyPassword(email: string, password: string): Promise<User | null> {
     const user = await prisma.user.findUnique({ where: { email } });
     if (user && user.password && await bcrypt.compare(password, user.password)) {
         const { password: _, ...userWithoutPassword } = user;
-        return serialize(userWithoutPassword as User);
+        return serialize(userWithoutPassword as User) as unknown as User;
     }
     return null;
 }
 
 // Upsert Actions
 export async function upsertUser(data: Partial<User> & { id: string }) {
-    const updateData: any = { ...data };
-    if (data.password) {
-        updateData.password = await bcrypt.hash(data.password, 10);
+    const { id, ...updateData } = data;
+    if (updateData.password) {
+        updateData.password = await bcrypt.hash(updateData.password, 10);
     }
-    const createData: any = { ...data };
-     if (data.password) {
-        createData.password = await bcrypt.hash(data.password, 10);
-    } else {
-        // A password is required for creation, but we may not have it.
-        // This is a bit of a hack for this simplified setup.
-        // A real app would separate user creation and updates more cleanly.
-        delete createData.password;
-    }
-
 
     return serialize(await prisma.user.upsert({
-        where: { id: data.id },
+        where: { id: id }, 
         update: updateData,
-        create: createData as any,
-    }));
+        create: {
+            ...updateData,
+            // Ensure required fields are present for creation
+            fullName: updateData.fullName || 'New User',
+            email: updateData.email || `user-${Date.now()}@example.com`,
+            role: updateData.role || 'student',
+        } as any,
+    })) as unknown as User;
 }
 
 export async function upsertTest(test: Test) {
@@ -123,17 +123,36 @@ export async function upsertTest(test: Test) {
         where: { id: test.id || 'new' },
         update: testData as any,
         create: testData as any,
-    }));
+    })) as unknown as Test;
 }
 
-export async function upsertCategory(category: Category) {
-    const categoryData = { ...category, id: category.id || undefined };
-     return serialize(await prisma.category.upsert({
-        where: { id: category.id || 'new' },
-        update: categoryData as any,
-        create: categoryData as any,
-    }));
+export async function upsertCategory(category: Category): Promise<Category> {
+  const { id, ...data } = category;
+
+  // Check if a category with this ID already exists
+  const existingCategory = await prisma.category.findUnique({
+    where: { id: id },
+  });
+
+  if (existingCategory) {
+    // If it exists, update it
+    const updatedCategory = await prisma.category.update({
+      where: { id: id },
+      data: data,
+    });
+    return serialize(updatedCategory) as unknown as Category;
+  } else {
+    // If it does not exist, create it
+    const newCategory = await prisma.category.create({
+      data: {
+        id: id,
+        ...data,
+      },
+    });
+    return serialize(newCategory) as unknown as Category;
+  }
 }
+
 
 export async function upsertResult(result: Omit<Result, 'id'>): Promise<Result> {
     const { testId, userId } = result;
@@ -159,7 +178,7 @@ export async function upsertResult(result: Omit<Result, 'id'>): Promise<Result> 
             submittedAt: new Date(dataToUpsert.submittedAt), // Ensure date object on create
         },
     });
-    return serialize(createdOrUpdatedResult) as Result;
+    return serialize(createdOrUpdatedResult) as unknown as Result;
 }
 
 
@@ -169,7 +188,7 @@ export async function upsertReport(report: Report) {
         where: { id: report.id || 'new' },
         update: data as any,
         create: data as any,
-    }));
+    })) as unknown as Report;
 }
 
 export async function upsertChatThread(thread: ChatThread) {
@@ -182,12 +201,12 @@ export async function upsertChatThread(thread: ChatThread) {
         where: { studentId: thread.studentId },
         update: data as any,
         create: data as any,
-    }));
+    })) as unknown as ChatThread;
 }
 
 export async function saveSarthiBotTrainingData(data: SarthiBotTrainingData[]) {
     await prisma.sarthiBotTrainingData.deleteMany({});
-    return serialize(await prisma.sarthiBotTrainingData.createMany({ data }));
+    return serialize(await prisma.sarthiBotTrainingData.createMany({ data })) as unknown as SarthiBotTrainingData[];
 }
 
 export async function upsertSarthiBotConversation(conversation: SarthiBotConversation) {
@@ -196,7 +215,7 @@ export async function upsertSarthiBotConversation(conversation: SarthiBotConvers
         where: { studentId: conversation.studentId },
         update: data as any,
         create: data as any,
-    }));
+    })) as unknown as SarthiBotConversation;
 }
 
 export async function saveFeedbacks(feedbacks: Feedback[]) {
@@ -215,7 +234,7 @@ export async function upsertSiteSettings(settings: Partial<SiteSettings>) {
         where: { id: 'default' },
         update: settings,
         create: { ...settings, id: 'default' } as any,
-    }));
+    })) as unknown as SiteSettings;
 }
 
 // Delete Actions
@@ -226,6 +245,12 @@ export async function removeTest(testId: string) {
 export async function removeCategory(categoryId: string, deleteTests: boolean) {
     if (deleteTests) {
         await prisma.test.deleteMany({ where: { categoryId } });
+    } else {
+        // Unassign tests instead of deleting them
+        await prisma.test.updateMany({
+            where: { categoryId },
+            data: { categoryId: null },
+        });
     }
     return await prisma.category.delete({ where: { id: categoryId } });
 }
@@ -243,5 +268,3 @@ export async function removeSarthiBotConversation(conversationId: string) {
     // ID is studentId in this case
     return await prisma.sarthiBotConversation.delete({ where: { studentId: conversationId } });
 }
-
-
