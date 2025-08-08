@@ -99,25 +99,21 @@ export async function verifyPassword(email: string, password: string): Promise<U
 
 // Upsert Actions
 export async function upsertUser(data: Partial<User> & { id: string }) {
-    const updateData: any = { ...data };
-    if (data.password) {
-        updateData.password = await bcrypt.hash(data.password, 10);
+    const { id, ...updateData } = data;
+    if (updateData.password) {
+        updateData.password = await bcrypt.hash(updateData.password, 10);
     }
-    const createData: any = { ...data };
-     if (data.password) {
-        createData.password = await bcrypt.hash(data.password, 10);
-    } else {
-        // A password is required for creation, but we may not have it.
-        // This is a bit of a hack for this simplified setup.
-        // A real app would separate user creation and updates more cleanly.
-        delete createData.password;
-    }
-
 
     return serialize(await prisma.user.upsert({
-        where: { id: data.id },
+        where: { id: id }, 
         update: updateData,
-        create: createData as any,
+        create: {
+            ...updateData,
+            // Ensure required fields are present for creation
+            fullName: updateData.fullName || 'New User',
+            email: updateData.email || `user-${Date.now()}@example.com`,
+            role: updateData.role || 'student',
+        } as any,
     })) as unknown as User;
 }
 
@@ -131,13 +127,22 @@ export async function upsertTest(test: Test) {
 }
 
 export async function upsertCategory(category: Category) {
-    const categoryData = { ...category, id: category.id || undefined };
-     return serialize(await prisma.category.upsert({
-        where: { id: category.id || 'new' },
-        update: categoryData as any,
-        create: categoryData as any,
-    })) as unknown as Category;
+    const { id, ...categoryData } = category;
+    
+    // If an ID is provided, it's an update. If not, it's a creation.
+    if (id && id.startsWith('cat-')) { // This is a new category
+        const { id: _, ...createData } = category; // remove temporary ID
+        return serialize(await prisma.category.create({
+            data: createData as any,
+        })) as unknown as Category;
+    } else { // This is an existing category
+        return serialize(await prisma.category.update({
+            where: { id: id },
+            data: categoryData,
+        })) as unknown as Category;
+    }
 }
+
 
 export async function upsertResult(result: Omit<Result, 'id'>): Promise<Result> {
     const { testId, userId } = result;
@@ -230,6 +235,12 @@ export async function removeTest(testId: string) {
 export async function removeCategory(categoryId: string, deleteTests: boolean) {
     if (deleteTests) {
         await prisma.test.deleteMany({ where: { categoryId } });
+    } else {
+        // Unassign tests instead of deleting them
+        await prisma.test.updateMany({
+            where: { categoryId },
+            data: { categoryId: null },
+        });
     }
     return await prisma.category.delete({ where: { id: categoryId } });
 }
