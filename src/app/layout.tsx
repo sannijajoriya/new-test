@@ -21,9 +21,9 @@ export const metadata: Metadata = {
     'REET Practice',
     'Lab Assistant',
     'Rajasthan Police',
-    'Mock Test Rajasthan'
-  ]
-   icons: {
+    'Mock Test Rajasthan',
+  ],
+  icons: {
     icon: '/favicon.ico',
   },
 }
