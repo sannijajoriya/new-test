@@ -45,18 +45,16 @@ const defaultSiteSettings: SiteSettings = {
 
 export const useTests = () => {
     const { data, error, isLoading, mutate } = useSWR<Test[]>('tests', fetcher);
+    
     const updateTest = React.useCallback(async (test: Test) => {
-        const optimisticData = (data || []).map(t => t.id === test.id ? test : t);
-        if (!(data || []).some(t => t.id === test.id)) {
-            optimisticData.push(test);
-        }
-        await mutate(DataActions.upsertTest(test), { optimisticData, revalidate: false });
-    }, [data, mutate]);
+        await DataActions.upsertTest(test);
+        mutate(); 
+    }, [mutate]);
 
     const deleteTest = React.useCallback(async (id: string) => {
-        const optimisticData = (data || []).filter(t => t.id !== id);
-        await mutate(DataActions.removeTest(id), { optimisticData, revalidate: false });
-    }, [data, mutate]);
+        await DataActions.removeTest(id);
+        mutate();
+    }, [mutate]);
 
     return { 
         data: data || [], 
@@ -70,24 +68,16 @@ export const useTests = () => {
 
 export const useCategories = () => {
     const { data, error, isLoading, mutate } = useSWR<Category[]>('categories', fetcher);
+    
     const updateCategory = React.useCallback(async (category: Category) => {
-        const isNew = !(data || []).some(c => c.id === category.id);
-        const optimisticData = isNew 
-            ? [...(data || []), category]
-            : (data || []).map(c => c.id === category.id ? category : c);
-
-        await mutate(DataActions.upsertCategory(category), { 
-            optimisticData,
-            rollbackOnError: true,
-            populateCache: true,
-            revalidate: true,
-        });
-    }, [data, mutate]);
+        await DataActions.upsertCategory(category);
+        mutate();
+    }, [mutate]);
 
     const deleteCategory = React.useCallback(async (id: string, deleteTests: boolean) => {
-        const optimisticData = (data || []).filter(c => c.id !== id);
-        await mutate(DataActions.removeCategory(id, deleteTests), { optimisticData, revalidate: false });
-    }, [data, mutate]);
+        await DataActions.removeCategory(id, deleteTests);
+        mutate();
+    }, [mutate]);
 
     return {
         data: data || [],
@@ -102,14 +92,14 @@ export const useCategories = () => {
 export const useAllUsers = () => {
     const { data, isLoading, mutate, error } = useSWR<User[]>('allUsers', fetcher);
     const updateUser = React.useCallback(async (id: string, userData: Partial<User>) => {
-        const optimisticData = (data || []).map(u => u.id === id ? { ...u, ...userData } : u);
-        await mutate(DataActions.upsertUser({ id, ...userData }), { optimisticData, revalidate: false });
-    }, [data, mutate]);
+        await DataActions.upsertUser({ id, ...userData });
+        mutate();
+    }, [mutate]);
 
     const deleteStudent = React.useCallback(async (id: string) => {
-        const optimisticData = (data || []).filter(u => u.id !== id);
-        await mutate(DataActions.removeStudent(id), { optimisticData, revalidate: false });
-    }, [data, mutate]);
+        await DataActions.removeStudent(id);
+        mutate();
+    }, [mutate]);
 
     return {
         allUsers: data || [],
@@ -144,22 +134,7 @@ export const useResults = () => {
     
      const updateItem = React.useCallback(async (result: Omit<Result, 'id'>): Promise<Result> => {
         const savedResult = await DataActions.upsertResult(result);
-        
-        await mutate(
-            (currentData) => {
-                const results = Array.isArray(currentData) ? currentData : [];
-                const index = results.findIndex(r => r.testId === savedResult.testId && r.userId === savedResult.userId);
-                
-                if (index !== -1) {
-                    const updatedData = [...results];
-                    updatedData[index] = savedResult;
-                    return updatedData;
-                } else {
-                    return [...results, savedResult];
-                }
-            }, 
-            { revalidate: true }
-        ); 
+        mutate();
         return savedResult;
     }, [mutate]);
 
@@ -176,12 +151,9 @@ export const useReports = () => {
     const { data, error, isLoading, mutate } = useSWR<Report[]>('reports', fetcher);
     
     const updateItem = React.useCallback(async (report: Report) => {
-        const optimisticData = (data || []).map(r => r.id === report.id ? report : r);
-        if (!(data || []).some(r => r.id === report.id)) {
-            optimisticData.push(report);
-        }
-        await mutate(DataActions.upsertReport(report), { optimisticData, revalidate: false });
-    }, [data, mutate]);
+        await DataActions.upsertReport(report);
+        mutate();
+    }, [mutate]);
     
     return { 
         data: data || [], 
@@ -195,30 +167,14 @@ export const useChatThreads = () => {
     const { data, error, isLoading, mutate } = useSWR<ChatThread[]>('chatThreads', fetcher);
 
     const updateItem = React.useCallback(async (thread: ChatThread) => {
-        // --- This is the new, stable logic ---
-        // 1. Update the local cache instantly for a smooth UI update.
-        mutate(
-            (cachedData: ChatThread[] | undefined) => {
-                const currentThreads = cachedData || [];
-                const index = currentThreads.findIndex(c => c.id === thread.id);
-                if (index > -1) {
-                    const updatedThreads = [...currentThreads];
-                    updatedThreads[index] = thread;
-                    return updatedThreads;
-                }
-                return [...currentThreads, thread];
-            }, 
-            false // IMPORTANT: Do not revalidate immediately.
-        );
-
-        // 2. Call the server action in the background. SWR will handle revalidation later if needed.
         await DataActions.upsertChatThread(thread);
+        mutate();
     }, [mutate]);
 
     const deleteItem = React.useCallback(async (id: string) => {
-        const optimisticData = (data || []).filter(t => t.studentId !== id);
-        await mutate(DataActions.removeChatThread(id), { optimisticData, revalidate: false });
-    }, [data, mutate]);
+        await DataActions.removeChatThread(id);
+        mutate();
+    }, [mutate]);
     
     return {
         data: data || [],
@@ -232,7 +188,8 @@ export const useChatThreads = () => {
 export const useSarthiBotTrainingData = () => {
     const { data, error, isLoading, mutate } = useSWR<SarthiBotTrainingData[]>('sarthiBotTrainingData', fetcher);
     const updateSarthiBotTrainingData = React.useCallback(async (trainingData: SarthiBotTrainingData[]) => {
-        await mutate(DataActions.saveSarthiBotTrainingData(trainingData), { optimisticData: trainingData, revalidate: false });
+        await DataActions.saveSarthiBotTrainingData(trainingData);
+        mutate();
     }, [mutate]);
     return { 
         trainingData: data, 
@@ -246,30 +203,14 @@ export const useSarthiBotConversations = () => {
     const { data, error, isLoading, mutate } = useSWR<SarthiBotConversation[]>('sarthiBotConversations', fetcher);
 
     const updateSarthiBotConversation = React.useCallback(async (conversation: SarthiBotConversation) => {
-       // --- This is the new, stable logic ---
-        // 1. Update the local cache instantly for a smooth UI update.
-        mutate(
-            (cachedData: SarthiBotConversation[] | undefined) => {
-                const currentConversations = cachedData || [];
-                const index = currentConversations.findIndex(c => c.id === conversation.id);
-                if (index > -1) {
-                    const updatedConversations = [...currentConversations];
-                    updatedConversations[index] = conversation;
-                    return updatedConversations;
-                }
-                return [...currentConversations, conversation];
-            }, 
-            false // IMPORTANT: Do not revalidate immediately.
-        );
-        
-        // 2. Call the server action in the background.
         await DataActions.upsertSarthiBotConversation(conversation);
+        mutate();
     }, [mutate]);
 
 
     const deleteSarthiBotConversation = React.useCallback(async (id: string) => {
-        const optimisticData = (data || []).filter(c => c.studentId !== id);
-        await mutate(DataActions.removeSarthiBotConversation(id), { optimisticData, revalidate: false });
+        await DataActions.removeSarthiBotConversation(id);
+        mutate();
     }, [data, mutate]);
 
      return {
@@ -284,7 +225,8 @@ export const useSarthiBotConversations = () => {
 export const useFeedbacks = () => {
     const { data, error, isLoading, mutate } = useSWR<Feedback[]>('feedbacks', fetcher);
     const updateFeedbacks = React.useCallback(async (feedbacks: Feedback[]) => {
-        await mutate(DataActions.saveFeedbacks(feedbacks), { optimisticData: feedbacks, revalidate: false });
+        await DataActions.saveFeedbacks(feedbacks);
+        mutate();
     }, [mutate]);
     return { 
         data, 
@@ -300,20 +242,12 @@ export const useSiteSettings = () => {
     const settings = data ? { ...defaultSiteSettings, ...data } : defaultSiteSettings;
 
     const updateSettings = React.useCallback(async (newSettings: Partial<SiteSettings>) => {
-        const optimisticData = { ...settings, ...newSettings };
-        
-        // Correct way to handle optimistic UI with SWR
-        // 1. Mutate locally without revalidation to show instant UI update
-        // 2. Trigger the async update
-        // 3. Let SWR handle revalidation upon completion by default
-        await mutate(DataActions.upsertSiteSettings(newSettings), {
-          optimisticData: optimisticData,
-          rollbackOnError: true,
-          populateCache: true,
-          revalidate: true,
-        });
-
-    }, [settings, mutate]);
+        // This is the corrected, simpler, and more robust logic.
+        // It tells SWR that the data is stale and needs to be refetched
+        // after the update operation completes.
+        await DataActions.upsertSiteSettings(newSettings);
+        mutate();
+    }, [mutate]);
 
     return { settings, isLoading, error, updateSettings };
 };
