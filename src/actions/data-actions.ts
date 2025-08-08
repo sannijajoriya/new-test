@@ -63,9 +63,8 @@ export async function fetchStudentFeedbacks(): Promise<Feedback[]> {
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettings | null> {
-    return serialize(await prisma.siteSettings.findUnique({ 
-        where: { id: 'default' },
-    })) as SiteSettings | null;
+    const settings = await prisma.siteSettings.findUnique({ where: { id: 'default' } });
+    return serialize(settings);
 }
 
 
@@ -118,36 +117,41 @@ export async function upsertUser(data: Partial<User> & { id: string }) {
 }
 
 export async function upsertTest(test: Test) {
-    const testData = { ...test, id: test.id || undefined };
-    return serialize(await prisma.test.upsert({
-        where: { id: test.id || 'new' },
-        update: testData as any,
-        create: testData as any,
-    })) as unknown as Test;
+    const { id, ...testData } = test;
+    const dataToSave = {
+        ...testData,
+        questions: testData.questions as any, // Prisma expects JsonValue for questions
+    };
+
+    if (id && !id.startsWith('new-')) {
+        // This is an update to an existing test
+        return serialize(await prisma.test.update({
+            where: { id: id },
+            data: dataToSave,
+        })) as unknown as Test;
+    } else {
+        // This is a new test, so we let Prisma generate the ID
+        return serialize(await prisma.test.create({
+            data: dataToSave,
+        })) as unknown as Test;
+    }
 }
+
 
 export async function upsertCategory(category: Category): Promise<Category> {
   const { id, ...data } = category;
 
-  // Check if a category with this ID already exists
-  const existingCategory = await prisma.category.findUnique({
-    where: { id: id },
-  });
-
-  if (existingCategory) {
-    // If it exists, update it
+  if (id && !id.startsWith('cat-')) {
+    // This is an update to an existing category
     const updatedCategory = await prisma.category.update({
       where: { id: id },
       data: data,
     });
     return serialize(updatedCategory) as unknown as Category;
   } else {
-    // If it does not exist, create it
+    // This is a new category, so we let Prisma generate the ID
     const newCategory = await prisma.category.create({
-      data: {
-        id: id,
-        ...data,
-      },
+      data: data,
     });
     return serialize(newCategory) as unknown as Category;
   }
@@ -183,13 +187,16 @@ export async function upsertResult(result: Omit<Result, 'id'>): Promise<Result> 
 
 
 export async function upsertReport(report: Report) {
-    const data = { ...report };
-    return serialize(await prisma.report.upsert({
-        where: { id: report.id || 'new' },
-        update: data as any,
-        create: data as any,
-    })) as unknown as Report;
+    const data = { ...report, chat: report.chat as any };
+    if (report.id && !report.id.startsWith('new-')) {
+        return serialize(await prisma.report.update({
+            where: { id: report.id },
+            data: data
+        })) as unknown as Report;
+    }
+    return serialize(await prisma.report.create({ data })) as unknown as Report;
 }
+
 
 export async function upsertChatThread(thread: ChatThread) {
     const data = { 
@@ -206,25 +213,27 @@ export async function upsertChatThread(thread: ChatThread) {
 
 export async function saveSarthiBotTrainingData(data: SarthiBotTrainingData[]) {
     await prisma.sarthiBotTrainingData.deleteMany({});
-    return serialize(await prisma.sarthiBotTrainingData.createMany({ data })) as unknown as SarthiBotTrainingData[];
+    // Manually handle ID creation for this model if it's not autoincrement
+    const dataToCreate = data.map(item => ({ question: item.question, answer: item.answer }));
+    return serialize(await prisma.sarthiBotTrainingData.createMany({ data: dataToCreate })) as any;
 }
 
 export async function upsertSarthiBotConversation(conversation: SarthiBotConversation) {
-    const data = { ...conversation };
+    const data = { ...conversation, messages: conversation.messages as any };
     return serialize(await prisma.sarthiBotConversation.upsert({
         where: { studentId: conversation.studentId },
-        update: data as any,
-        create: data as any,
+        update: data,
+        create: data,
     })) as unknown as SarthiBotConversation;
 }
 
 export async function saveFeedbacks(feedbacks: Feedback[]) {
-    // This is a simple implementation. For large datasets, a more granular approach would be better.
     for (const feedback of feedbacks) {
+        const { id, ...data } = feedback;
         await prisma.feedback.upsert({
-            where: { id: feedback.id || 'new' },
-            update: feedback,
-            create: feedback as any,
+            where: { id: id || 'new' },
+            update: data,
+            create: data as any,
         });
     }
 }
@@ -239,11 +248,17 @@ export async function upsertSiteSettings(settings: Partial<SiteSettings>) {
 
 // Delete Actions
 export async function removeTest(testId: string) {
+    await prisma.result.deleteMany({ where: { testId } });
     return await prisma.test.delete({ where: { id: testId } });
 }
 
 export async function removeCategory(categoryId: string, deleteTests: boolean) {
     if (deleteTests) {
+        // First delete results for all tests in this category
+        const testsToDelete = await prisma.test.findMany({ where: { categoryId } });
+        const testIds = testsToDelete.map(t => t.id);
+        await prisma.result.deleteMany({ where: { testId: { in: testIds } } });
+        // Then delete the tests
         await prisma.test.deleteMany({ where: { categoryId } });
     } else {
         // Unassign tests instead of deleting them
