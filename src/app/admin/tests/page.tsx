@@ -474,7 +474,7 @@ function CategoryDialog({ isOpen, onClose, onSave, category }: { isOpen: boolean
                         )} />
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                            <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>{category ? 'Save Changes' : 'Create Category'}</Button>
+                            <Button type="submit" disabled={form.formState.isSubmitting}>{category ? 'Save Changes' : 'Create Category'}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -686,7 +686,7 @@ function AITestGenerator({ form }: { form: UseFormReturn<TestFormData> }) {
 
 export default function ManageTestsPage() {
   const { toast } = useToast();
-  const { data: tests, isLoading: isLoadingTests, updateTest, deleteTest, mutate: mutateTests } = useTests();
+  const { data: tests, isLoading: isLoadingTests, updateTest, deleteTest } = useTests();
   const { data: categories, isLoading: isLoadingCategories, updateCategory, deleteCategory } = useCategories();
   
   const [testToDelete, setTestToDelete] = useState<Test | null>(null);
@@ -745,9 +745,10 @@ export default function ManageTestsPage() {
         title: 'Test Created!',
         description: 'The new test has been added successfully.',
       });
+      const currentCategoryId = createForm.getValues("categoryId");
       createForm.reset({
         ...createForm.formState.defaultValues,
-        categoryId: selectedCategory?.id || '',
+        categoryId: currentCategoryId,
         title: '',
         questions: [{ text: '', imageUrl: '', options: [{ value: '' }, { value: '' }, { value: '' }, { value: '' }, { value: 'Not Attempted' }], correctAnswer: '' }],
       });
@@ -806,7 +807,6 @@ export default function ManageTestsPage() {
 
           setCategoryToDelete(null);
           toast({ title: "Category Deleted", variant: 'destructive' });
-          mutateTests(); // Revalidate tests as some might be uncategorized now
 
       } catch (error) {
           toast({ title: "Error", description: "Could not delete category.", variant: "destructive" });
