@@ -71,11 +71,17 @@ export const useTests = () => {
 export const useCategories = () => {
     const { data, error, isLoading, mutate } = useSWR<Category[]>('categories', fetcher);
     const updateCategory = React.useCallback(async (category: Category) => {
-        const optimisticData = (data || []).map(c => c.id === category.id ? category : c);
-        if (!(data || []).some(c => c.id === category.id)) {
-            optimisticData.push(category);
-        }
-        await mutate(DataActions.upsertCategory(category), { optimisticData, revalidate: false });
+        const isNew = !(data || []).some(c => c.id === category.id);
+        const optimisticData = isNew 
+            ? [...(data || []), category]
+            : (data || []).map(c => c.id === category.id ? category : c);
+
+        await mutate(DataActions.upsertCategory(category), { 
+            optimisticData,
+            rollbackOnError: true,
+            populateCache: true,
+            revalidate: true,
+        });
     }, [data, mutate]);
 
     const deleteCategory = React.useCallback(async (id: string, deleteTests: boolean) => {
@@ -299,12 +305,12 @@ export const useSiteSettings = () => {
         // Correct way to handle optimistic UI with SWR
         // 1. Mutate locally without revalidation to show instant UI update
         // 2. Trigger the async update
-        // 3. Let SWR handle revalidation upon completion by default (remove revalidate: false)
+        // 3. Let SWR handle revalidation upon completion by default
         await mutate(DataActions.upsertSiteSettings(newSettings), {
           optimisticData: optimisticData,
           rollbackOnError: true,
           populateCache: true,
-          revalidate: true, // This will refetch the data from the server after the update is complete.
+          revalidate: true,
         });
 
     }, [settings, mutate]);
