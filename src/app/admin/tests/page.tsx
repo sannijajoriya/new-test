@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -727,20 +726,8 @@ export default function ManageTestsPage() {
   });
 
   const onCreateSubmit = async (data: TestFormData) => {
-    const newTest: Test = {
-      id: `new-${Date.now()}`,
-      ...data,
-      questions: data.questions.map((q, index) => ({
-        id: `${Date.now()}-${index}`,
-        text: q.text,
-        imageUrl: q.imageUrl,
-        options: q.options.map(opt => opt.value),
-        correctAnswer: q.correctAnswer,
-      })),
-    };
-
     try {
-      await updateTest(newTest);
+      await updateTest(data as Test);
       toast({
         title: 'Test Created!',
         description: 'The new test has been added successfully.',
