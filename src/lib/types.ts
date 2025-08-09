@@ -9,7 +9,7 @@ export interface Category {
   userCount?: number | null;
   description?: string | null;
   languages?: string | null;
-  features?: string[] | null;
+  features?: any; // Changed to `any` to match `Json?` type in prisma
 }
 
 export interface Question {
@@ -37,7 +37,7 @@ export interface User {
   email: string;
   password?: string | null;
   profilePictureUrl?: string | null;
-  role: 'student' | 'admin';
+  role: 'student' | 'admin' | string;
   createdAt?: Date;
 }
 
@@ -70,7 +70,7 @@ export interface Report {
   questionText: string;
   reason: string;
   remarks: string | null;
-  status: 'pending' | 'responded';
+  status: 'pending' | 'responded' | string;
   chat: ChatMessage[];
   createdAt: Date;
 }
@@ -98,7 +98,7 @@ export interface Feedback {
   message: string;
   photoUrl?: string | null;
   createdAt: Date;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | string;
   order?: number | null;
 }
 
@@ -113,7 +113,7 @@ export interface SiteSettings {
   newsBannerImageUrl?: string | null;
   newsBannerTitle?: string | null;
   newsBannerLink?: string | null;
-  newsBannerDisplayRule?: 'ALWAYS' | 'SESSION' | null;
+  newsBannerDisplayRule?: 'ALWAYS' | 'SESSION' | string | null;
   heroBannerText?: string | null;
   isHeroBannerTextEnabled?: boolean | null;
   heroBannerImageUrl?: string | null;
