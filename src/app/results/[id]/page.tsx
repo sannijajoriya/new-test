@@ -32,6 +32,18 @@ const reportSchema = z.object({
 });
 type ReportFormData = z.infer<typeof reportSchema>;
 
+// Helper to get string value from option, which might be a string or an object {value: string}
+const getOptionValue = (option: any): string => {
+    if (typeof option === 'string') {
+        return option;
+    }
+    if (typeof option === 'object' && option !== null && 'value' in option && typeof option.value === 'string') {
+        return option.value;
+    }
+    return ''; // Fallback for unexpected types
+};
+
+
 function RaiseObjectionDialog({ isOpen, onClose, question, test, user, onSubmit }: { isOpen: boolean; onClose: () => void; question: QuestionType | null; test: Test | null; user: User | null, onSubmit: (report: Report) => void }) {
     const { toast } = useToast();
     const form = useForm<ReportFormData>({
@@ -385,7 +397,8 @@ function ResultsContent() {
                     </div>
                    )}
                   <div className="mt-4 space-y-2 pl-8">
-                    {q.options.map((opt, optionIndex) => {
+                    {q.options.map((option, optionIndex) => {
+                       const opt = getOptionValue(option);
                        const isUserAnswer = opt === userAnswer;
                        const isCorrectAnswer = opt === q.correctAnswer;
                        return (
