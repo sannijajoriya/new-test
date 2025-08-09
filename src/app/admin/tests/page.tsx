@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -60,7 +62,7 @@ const categorySchema = z.object({
     userCount: z.coerce.number().min(0, "User count cannot be negative").optional(),
     description: z.string().optional(),
     languages: z.string().optional(),
-    features: z.string().optional(), // Admin will enter comma-separated values
+    features: z.any(),
 });
 
 
@@ -393,7 +395,7 @@ function CategoryDialog({ isOpen, onClose, onSave, category }: { isOpen: boolean
                 userCount: category.userCount || 0,
                 description: category.description || '',
                 languages: category.languages || '',
-                features: category.features?.join(', ') || ''
+                features: Array.isArray(category.features) ? category.features?.join(', ') : (category.features || '')
             });
         } else {
              form.reset({
@@ -727,7 +729,17 @@ export default function ManageTestsPage() {
 
   const onCreateSubmit = async (data: TestFormData) => {
     try {
-      await updateTest(data as Test);
+      const testData: Omit<Test, 'id'> = {
+          ...data,
+          questions: data.questions.map((q, index) => ({
+                id: `new-q-${Date.now()}-${index}`,
+                text: q.text,
+                imageUrl: q.imageUrl,
+                options: q.options.map(opt => opt.value), // Convert from {value: string} to string
+                correctAnswer: q.correctAnswer,
+            })),
+      }
+      await updateTest(testData as Test);
       toast({
         title: 'Test Created!',
         description: 'The new test has been added successfully.',
@@ -774,7 +786,7 @@ export default function ManageTestsPage() {
             userCount: data.userCount,
             description: data.description,
             languages: data.languages,
-            features: data.features ? data.features.split(',').map(s => s.trim()).filter(Boolean) : [],
+            features: typeof data.features === 'string' ? data.features.split(',').map(s => s.trim()).filter(Boolean) : [],
         };
         await updateCategory(categoryData);
         toast({ title: data.id ? "Category Updated!" : "Category Created!", description: `${data.name} has been saved.` });
