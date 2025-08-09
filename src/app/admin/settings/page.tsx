@@ -476,11 +476,11 @@ function NewsBannerManager() {
                     >
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="SESSION" id="session" />
-                            <Label htmlFor="session">Show once per session</Label>
+                            <Label htmlFor="session" className="cursor-pointer">Show once per session</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="ALWAYS" id="always" />
-                            <Label htmlFor="always">Show every time the page is loaded</Label>
+                            <Label htmlFor="always" className="cursor-pointer">Show every time the page is loaded</Label>
                         </div>
                     </RadioGroup>
                 </div>
