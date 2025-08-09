@@ -333,6 +333,12 @@ function ActiveTestUI({
     const minutes = timeLeft !== null ? Math.floor(timeLeft / 60) : 0;
     const seconds = timeLeft !== null ? timeLeft % 60 : 0;
     const progress = timeLeft !== null ? ((test.duration * 60 - timeLeft) / (test.duration * 60)) * 100 : 0;
+    
+    // This function handles both old (object-based) and new (string-based) option formats.
+    const getOptionValue = (option: any): string => {
+        return typeof option === 'object' && option !== null && 'value' in option ? option.value : option;
+    };
+
 
     return (
         <>
@@ -366,12 +372,15 @@ function ActiveTestUI({
                                      </div>
                                 )}
                                 <RadioGroup onValueChange={handleSelectOption} value={answers[currentQuestion.id] || ''} className="space-y-3" disabled={isPreview}>
-                                    {currentQuestion.options.map((option, index) => (
-                                        <div key={index} className="flex items-center space-x-3 p-3 rounded-md border has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors">
-                                            <RadioGroupItem value={option} id={`option-${index}`} />
-                                            <Label htmlFor={`option-${index}`} className="text-base font-normal cursor-pointer flex-1">{option}</Label>
-                                        </div>
-                                    ))}
+                                    {currentQuestion.options.map((option, index) => {
+                                        const optionValue = getOptionValue(option);
+                                        return (
+                                            <div key={index} className="flex items-center space-x-3 p-3 rounded-md border has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors">
+                                                <RadioGroupItem value={optionValue} id={`option-${index}`} />
+                                                <Label htmlFor={`option-${index}`} className="text-base font-normal cursor-pointer flex-1">{optionValue}</Label>
+                                            </div>
+                                        );
+                                    })}
                                 </RadioGroup>
                                 {!isPreview && (
                                     <div className="mt-4 text-center">
@@ -660,5 +669,3 @@ export default function TestPage() {
         </AuthGuard>
     );
 }
-
-    
