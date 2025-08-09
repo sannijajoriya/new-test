@@ -527,16 +527,15 @@ function TestComponent() {
     
     let correctCount = 0;
     let wrongCount = 0;
+    
+    const attemptedAnswers = test.questions.filter(q => answers[q.id] && answers[q.id] !== 'Not Attempted');
 
-    test.questions.forEach(q => {
-      const userAnswer = answers[q.id];
-      if (userAnswer && userAnswer !== 'Not Attempted') {
-          if (userAnswer === q.correctAnswer) {
+    attemptedAnswers.forEach(q => {
+        if (answers[q.id] === q.correctAnswer) {
             correctCount++;
-          } else {
+        } else {
             wrongCount++;
-          }
-      }
+        }
     });
 
     const unansweredCount = test.questions.length - correctCount - wrongCount;
@@ -544,7 +543,7 @@ function TestComponent() {
     const marksPerCorrect = test.marksPerCorrect || 1;
     const negativeMarksPerWrong = test.negativeMarksPerWrong || 0;
     
-    const score = (correctCount * marksPerCorrect) + (wrongCount * negativeMarksPerWrong);
+    const score = (correctCount * marksPerCorrect) - (wrongCount * negativeMarksPerWrong);
 
     const newResult: Omit<Result, 'id'> = {
       testId: test.id,
