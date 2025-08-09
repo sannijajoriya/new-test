@@ -26,7 +26,13 @@ export async function fetchTests(): Promise<Test[]> {
 
 export async function fetchCategories(): Promise<Category[]> {
   const categories = await prisma.category.findMany();
-  return categories as Category[];
+  // The 'features' field in the DB might be a string, so we need to parse it.
+  const parsedCategories = categories.map(cat => ({
+      ...cat,
+      // `features` is now JSON, so it should already be an array if it exists
+      features: cat.features || [] 
+  }));
+  return serialize(parsedCategories) as unknown as Category[];
 }
 
 export async function fetchAllUsers(): Promise<User[]> {
@@ -97,18 +103,23 @@ export async function verifyPassword(email: string, password: string): Promise<U
 }
 
 // Upsert Actions
-export async function upsertUser(data: Partial<User> & { id: string }) {
+export async function upsertUser(data: Partial<User> & { id?: string }) {
     const { id, ...updateData } = data;
     if (updateData.password) {
         updateData.password = await bcrypt.hash(updateData.password, 10);
     }
+    
+    if (id) {
+         return serialize(await prisma.user.update({
+            where: { id: id }, 
+            data: updateData,
+        })) as unknown as User;
+    }
 
-    return serialize(await prisma.user.upsert({
-        where: { id: id }, 
-        update: updateData,
-        create: {
+    // This part should ideally not be hit if we are always updating existing users from the admin panel
+    return serialize(await prisma.user.create({
+        data: {
             ...updateData,
-            // Ensure required fields are present for creation
             fullName: updateData.fullName || 'New User',
             email: updateData.email || `user-${Date.now()}@example.com`,
             role: updateData.role || 'student',
@@ -139,22 +150,30 @@ export async function upsertTest(test: Test) {
 
 
 export async function upsertCategory(category: Category): Promise<Category> {
-  const { id, ...data } = category;
+    const { id, ...data } = category;
+    
+    // `features` now comes as a comma-separated string from the form
+    // We convert it to an array to store as JSON
+    const featuresArray = typeof data.features === 'string'
+        ? data.features.split(',').map(s => s.trim()).filter(Boolean)
+        : (data.features || []);
 
-  if (id && !id.startsWith('cat-')) {
-    // This is an update to an existing category
-    const updatedCategory = await prisma.category.update({
-      where: { id: id },
-      data: data,
-    });
-    return serialize(updatedCategory) as unknown as Category;
-  } else {
-    // This is a new category, so we let Prisma generate the ID
-    const newCategory = await prisma.category.create({
-      data: data,
-    });
-    return serialize(newCategory) as unknown as Category;
-  }
+    const dataToSave = {
+        ...data,
+        features: featuresArray, // Store as a JSON array
+    };
+    
+    if (id && !id.startsWith('cat-')) {
+        return serialize(await prisma.category.update({
+            where: { id },
+            data: dataToSave,
+        })) as unknown as Category;
+    } else {
+         const { id: _, ...createData } = dataToSave;
+         return serialize(await prisma.category.create({
+            data: createData,
+        })) as unknown as Category;
+    }
 }
 
 
@@ -202,12 +221,12 @@ export async function upsertChatThread(thread: ChatThread) {
     const data = { 
         ...thread,
         lastMessageAt: new Date(thread.lastMessageAt),
-        messages: thread.messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) }))
+        messages: thread.messages as any
     };
     return serialize(await prisma.chatThread.upsert({
         where: { studentId: thread.studentId },
-        update: data as any,
-        create: data as any,
+        update: data,
+        create: data,
     })) as unknown as ChatThread;
 }
 
