@@ -39,7 +39,7 @@ export function NewsBannerPopup() {
 
     const handleClose = () => {
         setIsOpen(false);
-        if (settings?.newsBannerDisplayRule === 'session' && typeof window !== 'undefined') {
+        if (settings?.newsBannerDisplayRule === 'SESSION' && typeof window !== 'undefined') {
             sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
         }
     };
@@ -66,9 +66,8 @@ export function NewsBannerPopup() {
                         <Image 
                             src={settings.newsBannerImageUrl} 
                             alt={settings.newsBannerTitle || 'News Banner'} 
-                            layout="fill" 
-                            objectFit="cover"
-                            className="rounded-t-lg"
+                            fill
+                            className="object-cover rounded-t-lg"
                         />
                     )}
                 </div>
