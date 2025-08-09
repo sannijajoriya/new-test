@@ -142,8 +142,9 @@ export async function upsertTest(test: Test) {
         })) as unknown as Test;
     } else {
         // This is a new test, so we let Prisma generate the ID
+        const { id: _, ...createData } = dataToSave;
         return serialize(await prisma.test.create({
-            data: dataToSave,
+            data: createData,
         })) as unknown as Test;
     }
 }
@@ -192,14 +193,8 @@ export async function upsertResult(result: Omit<Result, 'id'>): Promise<Result> 
                 userId,
             },
         },
-        update: {
-            ...dataToUpsert,
-            submittedAt: new Date(dataToUpsert.submittedAt), // Ensure date object on update
-        },
-        create: {
-             ...dataToUpsert,
-            submittedAt: new Date(dataToUpsert.submittedAt), // Ensure date object on create
-        },
+        update: dataToUpsert,
+        create: dataToUpsert,
     });
     return serialize(createdOrUpdatedResult) as unknown as Result;
 }
@@ -213,7 +208,8 @@ export async function upsertReport(report: Report) {
             data: data
         })) as unknown as Report;
     }
-    return serialize(await prisma.report.create({ data })) as unknown as Report;
+    const { id, ...createData } = data;
+    return serialize(await prisma.report.create({ data: createData })) as unknown as Report;
 }
 
 
