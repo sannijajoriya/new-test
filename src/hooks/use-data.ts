@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import React from 'react';
 import type { Test, Category, User, Result, Report, ChatThread, SarthiBotTrainingData, SarthiBotConversation, Feedback, SiteSettings } from '@/lib/types';
-import useSWR, { mutate } from 'swr';
+import useSWR from 'swr';
 import * as DataActions from '@/actions/data-actions';
 
 // SWR fetcher for all data types
@@ -48,12 +49,12 @@ export const useTests = () => {
     
     const updateTest = React.useCallback(async (test: Test) => {
         await DataActions.upsertTest(test);
-        mutate(); 
+        await mutate(); 
     }, [mutate]);
 
     const deleteTest = React.useCallback(async (id: string) => {
         await DataActions.removeTest(id);
-        mutate();
+        await mutate();
     }, [mutate]);
 
     return { 
@@ -71,12 +72,12 @@ export const useCategories = () => {
     
     const updateCategory = React.useCallback(async (category: Category) => {
         await DataActions.upsertCategory(category);
-        mutate();
+        await mutate();
     }, [mutate]);
 
     const deleteCategory = React.useCallback(async (id: string, deleteTests: boolean) => {
         await DataActions.removeCategory(id, deleteTests);
-        mutate();
+        await mutate();
     }, [mutate]);
 
     return {
@@ -93,12 +94,12 @@ export const useAllUsers = () => {
     const { data, isLoading, mutate, error } = useSWR<User[]>('allUsers', fetcher);
     const updateUser = React.useCallback(async (id: string, userData: Partial<User>) => {
         await DataActions.upsertUser({ id, ...userData });
-        mutate();
+        await mutate();
     }, [mutate]);
 
     const deleteStudent = React.useCallback(async (id: string) => {
         await DataActions.removeStudent(id);
-        mutate();
+        await mutate();
     }, [mutate]);
 
     return {
@@ -132,18 +133,33 @@ export const useStudents = () => {
 export const useResults = () => {
     const { data, error, isLoading, mutate } = useSWR<Result[]>('results', fetcher);
     
-     const updateItem = React.useCallback(async (result: Omit<Result, 'id'>): Promise<Result> => {
+     const updateResult = React.useCallback(async (result: Omit<Result, 'id'>): Promise<Result> => {
         const savedResult = await DataActions.upsertResult(result);
-        mutate();
+        // Optimistically update the local cache
+        if (data) {
+            const resultExists = data.some(r => r.testId === result.testId && r.userId === result.userId);
+            let updatedData;
+            if (resultExists) {
+                updatedData = data.map(r => 
+                    r.testId === result.testId && r.userId === result.userId 
+                    ? { ...r, ...result, id: r.id, submittedAt: new Date(result.submittedAt) } 
+                    : r
+                );
+            } else {
+                updatedData = [...data, { ...savedResult }];
+            }
+             await mutate(updatedData, { revalidate: false }); // Update local data without revalidating from server yet
+        }
+        await mutate(); // Trigger a revalidation from the server in the background
         return savedResult;
-    }, [mutate]);
+    }, [data, mutate]);
 
 
     return { 
         data: data || [], 
         isLoading, 
         error, 
-        updateItem
+        updateItem: updateResult
     };
 };
 
@@ -152,7 +168,7 @@ export const useReports = () => {
     
     const updateItem = React.useCallback(async (report: Report) => {
         await DataActions.upsertReport(report);
-        mutate();
+        await mutate();
     }, [mutate]);
     
     return { 
@@ -168,12 +184,12 @@ export const useChatThreads = () => {
 
     const updateItem = React.useCallback(async (thread: ChatThread) => {
         await DataActions.upsertChatThread(thread);
-        mutate();
+        await mutate();
     }, [mutate]);
 
     const deleteItem = React.useCallback(async (id: string) => {
         await DataActions.removeChatThread(id);
-        mutate();
+        await mutate();
     }, [mutate]);
     
     return {
@@ -189,7 +205,7 @@ export const useSarthiBotTrainingData = () => {
     const { data, error, isLoading, mutate } = useSWR<SarthiBotTrainingData[]>('sarthiBotTrainingData', fetcher);
     const updateSarthiBotTrainingData = React.useCallback(async (trainingData: SarthiBotTrainingData[]) => {
         await DataActions.saveSarthiBotTrainingData(trainingData);
-        mutate();
+        await mutate();
     }, [mutate]);
     return { 
         trainingData: data, 
@@ -204,14 +220,14 @@ export const useSarthiBotConversations = () => {
 
     const updateSarthiBotConversation = React.useCallback(async (conversation: SarthiBotConversation) => {
         await DataActions.upsertSarthiBotConversation(conversation);
-        mutate();
+        await mutate();
     }, [mutate]);
 
 
     const deleteSarthiBotConversation = React.useCallback(async (id: string) => {
         await DataActions.removeSarthiBotConversation(id);
-        mutate();
-    }, [data, mutate]);
+        await mutate();
+    }, [mutate]);
 
      return {
         conversations: data || [],
@@ -226,7 +242,7 @@ export const useFeedbacks = () => {
     const { data, error, isLoading, mutate } = useSWR<Feedback[]>('feedbacks', fetcher);
     const updateFeedbacks = React.useCallback(async (feedbacks: Feedback[]) => {
         await DataActions.saveFeedbacks(feedbacks);
-        mutate();
+        await mutate();
     }, [mutate]);
     return { 
         data, 
@@ -242,11 +258,8 @@ export const useSiteSettings = () => {
     const settings = data ? { ...defaultSiteSettings, ...data } : defaultSiteSettings;
 
     const updateSettings = React.useCallback(async (newSettings: Partial<SiteSettings>) => {
-        // This is the corrected, simpler, and more robust logic.
-        // It tells SWR that the data is stale and needs to be refetched
-        // after the update operation completes.
         await DataActions.upsertSiteSettings(newSettings);
-        mutate();
+        await mutate();
     }, [mutate]);
 
     return { settings, isLoading, error, updateSettings };
