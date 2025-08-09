@@ -122,7 +122,7 @@ model SiteSettings {
   newsBannerImageUrl        String?
   newsBannerTitle           String?
   newsBannerLink            String?
-  newsBannerDisplayRule     String?   @default("session") // "always" or "session"
+  newsBannerDisplayRule     String?   @default("SESSION") // "ALWAYS" or "SESSION"
   heroBannerText            String?
   isHeroBannerTextEnabled   Boolean?
   heroBannerImageUrl        String?
