@@ -206,13 +206,15 @@ const QuestionPalette = ({
         <CardContent>
             <ScrollArea className="h-96">
                 <div className="grid grid-cols-5 gap-2">
-                    {questions.map((q, index) => (
+                    {questions.map((q, index) => {
+                    const isAnswered = answers[q.id] && answers[q.id] !== 'Not Attempted';
+                    return (
                     <Button
                         key={q.id}
                         variant={currentQuestionIndex === index ? 'default' : (isPreview ? 'secondary' : (answers[q.id] ? 'secondary' : 'outline'))}
                         className={cn(
                             "h-10 w-10 p-0",
-                            !isPreview && answers[q.id] && answers[q.id] !== 'Not Attempted' && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100",
+                            !isPreview && isAnswered && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100",
                             !isPreview && answers[q.id] === 'Not Attempted' && "bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-100",
                             currentQuestionIndex === index && "ring-2 ring-primary-foreground ring-offset-2"
                         )}
@@ -220,7 +222,7 @@ const QuestionPalette = ({
                     >
                         {index + 1}
                     </Button>
-                    ))}
+                    )})}
                 </div>
             </ScrollArea>
         </CardContent>
@@ -246,14 +248,16 @@ const MobileQuestionPalette = ({
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-2 z-50">
             <ScrollArea className="w-full whitespace-nowrap">
                 <div className="flex gap-2 pb-2">
-                    {questions.map((q, index) => (
+                    {questions.map((q, index) => {
+                    const isAnswered = answers[q.id] && answers[q.id] !== 'Not Attempted';
+                    return (
                     <Button
                         key={q.id}
                         size="icon"
                         variant={currentQuestionIndex === index ? 'default' : (isPreview ? 'secondary' : (answers[q.id] ? 'secondary' : 'outline'))}
                         className={cn(
                             "h-9 w-9 p-0 flex-shrink-0",
-                             !isPreview && answers[q.id] && answers[q.id] !== 'Not Attempted' && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100",
+                             !isPreview && isAnswered && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100",
                              !isPreview && answers[q.id] === 'Not Attempted' && "bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-100",
                             currentQuestionIndex === index && "ring-2 ring-primary-foreground ring-offset-2"
                         )}
@@ -261,7 +265,7 @@ const MobileQuestionPalette = ({
                     >
                         {index + 1}
                     </Button>
-                    ))}
+                    )})}
                 </div>
             </ScrollArea>
         </div>
@@ -528,13 +532,14 @@ function TestComponent() {
     let correctCount = 0;
     let wrongCount = 0;
     
-    const attemptedAnswers = test.questions.filter(q => answers[q.id] && answers[q.id] !== 'Not Attempted');
-
-    attemptedAnswers.forEach(q => {
-        if (answers[q.id] === q.correctAnswer) {
-            correctCount++;
-        } else {
-            wrongCount++;
+    test.questions.forEach(q => {
+        const userAnswer = answers[q.id];
+        if (userAnswer && userAnswer !== 'Not Attempted') {
+            if (userAnswer === q.correctAnswer) {
+                correctCount++;
+            } else {
+                wrongCount++;
+            }
         }
     });
 
@@ -543,7 +548,7 @@ function TestComponent() {
     const marksPerCorrect = test.marksPerCorrect || 1;
     const negativeMarksPerWrong = test.negativeMarksPerWrong || 0;
     
-    const score = (correctCount * marksPerCorrect) - (wrongCount * negativeMarksPerWrong);
+    const score = (correctCount * marksPerCorrect) + (wrongCount * negativeMarksPerWrong);
 
     const newResult: Omit<Result, 'id'> = {
       testId: test.id,
