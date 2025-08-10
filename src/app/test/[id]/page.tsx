@@ -198,7 +198,7 @@ const QuestionPalette = ({
   isPreview?: boolean;
 }) => {
   return (
-    <div className="hidden md:block w-64">
+    <div className="hidden md:block w-64 flex-shrink-0">
       <Card>
         <CardHeader>
           <CardTitle>Questions</CardTitle>
@@ -208,14 +208,16 @@ const QuestionPalette = ({
                 <div className="grid grid-cols-5 gap-2">
                     {questions.map((q, index) => {
                     const isAnswered = answers[q.id] && answers[q.id] !== 'Not Attempted';
+                    const isNotAttempted = answers[q.id] === 'Not Attempted';
+                    
                     return (
                     <Button
                         key={q.id}
-                        variant={currentQuestionIndex === index ? 'default' : (isPreview ? 'secondary' : (answers[q.id] ? 'secondary' : 'outline'))}
+                        variant={currentQuestionIndex === index ? 'default' : 'outline'}
                         className={cn(
                             "h-10 w-10 p-0",
-                            !isPreview && isAnswered && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100",
-                            !isPreview && answers[q.id] === 'Not Attempted' && "bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-100",
+                            !isPreview && isAnswered && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100 border-green-400",
+                            !isPreview && isNotAttempted && "bg-orange-200 hover:bg-orange-300 text-orange-800 dark:bg-orange-800 dark:hover:bg-orange-700 dark:text-orange-100 border-orange-400",
                             currentQuestionIndex === index && "ring-2 ring-primary-foreground ring-offset-2"
                         )}
                         onClick={() => onQuestionSelect(index)}
@@ -250,15 +252,17 @@ const MobileQuestionPalette = ({
                 <div className="flex gap-2 pb-2">
                     {questions.map((q, index) => {
                     const isAnswered = answers[q.id] && answers[q.id] !== 'Not Attempted';
+                    const isNotAttempted = answers[q.id] === 'Not Attempted';
+
                     return (
                     <Button
                         key={q.id}
                         size="icon"
-                        variant={currentQuestionIndex === index ? 'default' : (isPreview ? 'secondary' : (answers[q.id] ? 'secondary' : 'outline'))}
+                        variant={currentQuestionIndex === index ? 'default' : 'outline'}
                         className={cn(
                             "h-9 w-9 p-0 flex-shrink-0",
-                             !isPreview && isAnswered && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100",
-                             !isPreview && answers[q.id] === 'Not Attempted' && "bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-100",
+                             !isPreview && isAnswered && "bg-green-200 hover:bg-green-300 text-green-800 dark:bg-green-800 dark:hover:bg-green-700 dark:text-green-100 border-green-400",
+                             !isPreview && isNotAttempted && "bg-orange-200 hover:bg-orange-300 text-orange-800 dark:bg-orange-800 dark:hover:bg-orange-700 dark:text-orange-100 border-orange-400",
                             currentQuestionIndex === index && "ring-2 ring-primary-foreground ring-offset-2"
                         )}
                         onClick={() => onQuestionSelect(index)}
@@ -327,29 +331,36 @@ function ActiveTestUI({
     const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
     const [questionToReport, setQuestionToReport] = useState<QuestionType | null>(null);
     const { updateItem: updateReport } = useReports();
+    const mainContentRef = useRef<HTMLDivElement>(null);
 
     const currentQuestion: QuestionType = test.questions[currentQuestionIndex];
 
     const handleSelectOption = (option: string) => {
         setAnswers(prev => ({ ...prev, [currentQuestion.id]: option }));
     };
+    
+    useEffect(() => {
+        if(mainContentRef.current) {
+            mainContentRef.current.scrollTop = 0;
+        }
+    }, [currentQuestionIndex]);
 
     const minutes = timeLeft !== null ? Math.floor(timeLeft / 60) : 0;
     const seconds = timeLeft !== null ? timeLeft % 60 : 0;
     const progress = timeLeft !== null ? ((test.duration * 60 - timeLeft) / (test.duration * 60)) * 100 : 0;
     
-    // This function handles both old (object-based) and new (string-based) option formats.
     const getOptionValue = (option: any): string => {
-        return typeof option === 'object' && option !== null && 'value' in option ? option.value : option;
+        if (typeof option === 'string') return option;
+        if (typeof option === 'object' && option !== null && 'value' in option && typeof option.value === 'string') return option.value;
+        return '';
     };
-
 
     return (
         <>
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-                <div className="flex-1 w-full">
-                    <Card className="w-full">
-                        <CardHeader>
+            <div className="flex flex-col md:flex-row gap-8 items-start h-full">
+                <div className="flex-1 w-full h-full flex flex-col">
+                    <Card className="w-full flex-grow flex flex-col">
+                        <CardHeader className="flex-shrink-0">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <CardTitle className="text-2xl">{test.title}</CardTitle>
@@ -367,43 +378,47 @@ function ActiveTestUI({
                             </div>
                            {!isPreview && <Progress value={progress} className="w-full mt-2" />}
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6 min-h-[200px] mb-16 md:mb-0">
-                                <p className="text-lg font-medium">{currentQuestion.text}</p>
-                                {currentQuestion.imageUrl && (
-                                     <div className="relative w-full max-w-md h-64 mx-auto rounded-md overflow-hidden border">
-                                         <Image src={currentQuestion.imageUrl} alt={`Question ${currentQuestionIndex + 1} image`} layout="fill" objectFit="contain" data-ai-hint="diagram illustration" />
-                                     </div>
-                                )}
-                                <RadioGroup onValueChange={handleSelectOption} value={answers[currentQuestion.id] || ''} className="space-y-3" disabled={isPreview}>
-                                    {currentQuestion.options.map((option, index) => {
-                                        const optionValue = getOptionValue(option);
-                                        return (
-                                            <div key={index} className="flex items-center space-x-3 p-3 rounded-md border has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors">
-                                                <RadioGroupItem value={optionValue} id={`option-${index}`} />
-                                                <Label htmlFor={`option-${index}`} className="text-base font-normal cursor-pointer flex-1">{optionValue}</Label>
-                                            </div>
-                                        );
-                                    })}
-                                </RadioGroup>
-                                {!isPreview && (
-                                    <div className="mt-4 text-center">
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            className="text-xs text-muted-foreground h-auto p-1"
-                                            onClick={() => {
-                                                setQuestionToReport(currentQuestion);
-                                                setIsReportDialogOpen(true);
-                                            }}
-                                        >
-                                            <Flag className="mr-1 h-3 w-3" /> Raise Objection
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                        <CardFooter className="flex justify-between">
+                        
+                        <ScrollArea className="flex-grow" ref={mainContentRef}>
+                            <CardContent>
+                                <div className="space-y-6 min-h-[200px] mb-16 md:mb-0">
+                                    <p className="text-lg font-medium">{currentQuestion.text}</p>
+                                    {currentQuestion.imageUrl && (
+                                         <div className="relative w-full max-w-md h-64 mx-auto rounded-md overflow-hidden border">
+                                             <Image src={currentQuestion.imageUrl} alt={`Question ${currentQuestionIndex + 1} image`} layout="fill" objectFit="contain" data-ai-hint="diagram illustration" />
+                                         </div>
+                                    )}
+                                    <RadioGroup onValueChange={handleSelectOption} value={answers[currentQuestion.id] || ''} className="space-y-3" disabled={isPreview}>
+                                        {currentQuestion.options.map((option, index) => {
+                                            const optionValue = getOptionValue(option);
+                                            return (
+                                                <div key={index} className="flex items-center space-x-3 p-3 rounded-md border has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors">
+                                                    <RadioGroupItem value={optionValue} id={`option-${index}`} />
+                                                    <Label htmlFor={`option-${index}`} className="text-base font-normal cursor-pointer flex-1">{optionValue}</Label>
+                                                </div>
+                                            );
+                                        })}
+                                    </RadioGroup>
+                                    {!isPreview && (
+                                        <div className="mt-4 text-center">
+                                            <Button
+                                                variant="link"
+                                                size="sm"
+                                                className="text-xs text-muted-foreground h-auto p-1"
+                                                onClick={() => {
+                                                    setQuestionToReport(currentQuestion);
+                                                    setIsReportDialogOpen(true);
+                                                }}
+                                            >
+                                                <Flag className="mr-1 h-3 w-3" /> Raise Objection
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </ScrollArea>
+                        
+                        <CardFooter className="flex justify-between flex-shrink-0">
                             <Button 
                                 variant="outline" 
                                 onClick={() => setCurrentQuestionIndex(p => p - 1)} 
@@ -497,6 +512,17 @@ function TestComponent() {
   const isLoading = isLoadingTests || isLoadingCategories || isLoadingResults || isUserLoading;
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+        document.body.dataset.testActive = String(testState === 'active');
+    }
+    return () => {
+        if (typeof window !== 'undefined') {
+            document.body.dataset.testActive = 'false';
+        }
+    }
+  }, [testState]);
+
+  useEffect(() => {
     if (!user || !testId || isLoading) return;
     
     const currentTest = tests?.find(t => t.id === testId);
@@ -546,9 +572,10 @@ function TestComponent() {
     const unansweredCount = test.questions.length - correctCount - wrongCount;
 
     const marksPerCorrect = test.marksPerCorrect || 1;
+    // Ensure negative marks are subtracted, not added. User inputs a positive number.
     const negativeMarksPerWrong = test.negativeMarksPerWrong || 0;
     
-    const score = (correctCount * marksPerCorrect) + (wrongCount * negativeMarksPerWrong);
+    const score = (correctCount * marksPerCorrect) - (wrongCount * negativeMarksPerWrong);
 
     const newResult: Omit<Result, 'id'> = {
       testId: test.id,
