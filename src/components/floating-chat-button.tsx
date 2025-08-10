@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,24 @@ export function FloatingChatButton() {
     const { adminUser } = useAdminUser();
     const [isOpen, setIsOpen] = useState(false);
     const [activeView, setActiveView] = useState<'list' | 'bot' | 'admin'>('list');
+    const [isTestActive, setIsTestActive] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setIsTestActive(document.body.dataset.testActive === 'true');
+
+            const observer = new MutationObserver((mutations) => {
+                for(const mutation of mutations) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'data-test-active') {
+                        setIsTestActive((mutation.target as HTMLElement).dataset.testActive === 'true');
+                    }
+                }
+            });
+            observer.observe(document.body, { attributes: true });
+
+            return () => observer.disconnect();
+        }
+    }, []);
     
 
     useEffect(() => {
@@ -27,7 +44,7 @@ export function FloatingChatButton() {
         }
     }, [isOpen]);
     
-    if (user?.role !== 'student' || !settings) {
+    if (user?.role !== 'student' || !settings || isTestActive) {
         return null;
     }
 
@@ -107,17 +124,7 @@ export function FloatingChatButton() {
                     variant="default"
                     className="fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full p-0 shadow-lg transition-transform duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-primary/50"
                 >
-                    {settings.logoUrl ? (
-                        <Image
-                            src={settings.logoUrl}
-                            alt="Chat with UdaanSarthi"
-                            width={60}
-                            height={60}
-                            className="rounded-full object-contain p-2"
-                        />
-                    ) : (
-                        <MessageSquare />
-                    )}
+                    <MessageSquare className="h-8 w-8 text-primary-foreground" />
                      <span className="sr-only">Open Live Chat</span>
                 </Button>
             </SheetTrigger>
