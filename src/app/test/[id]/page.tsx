@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { type Test, type Question as QuestionType, type Result, type Report, type User, type ChatMessage } from '@/lib/types';
 import { AuthGuard } from '@/components/auth-guard';
