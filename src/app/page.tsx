@@ -56,7 +56,7 @@ export default function HomePage() {
     <div className="space-y-20 md:space-y-32">
       {/* Hero Section */}
       <section className="text-center flex flex-col items-center">
-         <div className="relative w-full rounded-2xl overflow-hidden bg-gradient-to-b from-muted/30 to-background aspect-[16/9] md:aspect-[16/7]">
+         <div className="relative w-full aspect-[16/9] md:aspect-[16/7]">
              {isLoading ? (
                 <Skeleton className="h-full w-full" />
              ) : (
@@ -89,7 +89,7 @@ export default function HomePage() {
                 </>
              )}
         </div>
-        <div className="mt-8 md:-mt-8 md:z-10">
+        <div className="mt-8">
           <Button asChild size="lg" className="rounded-full">
               <Link href="/signup"><Rocket className="mr-2 h-5 w-5" /> Start Your Udaan</Link>
           </Button>
