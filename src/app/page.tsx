@@ -73,7 +73,6 @@ export default function HomePage() {
                 )}
                 <div 
                     className="absolute inset-0 flex flex-col items-center justify-center text-white p-4"
-                    style={{ backgroundColor: `rgba(0, 0, 0, ${settings.heroBannerOverlayOpacity ?? 0})` }}
                 >
                     {settings.isHeroBannerTextEnabled && heroText && (
                         <div className="text-center">
@@ -95,6 +94,9 @@ export default function HomePage() {
           </Button>
         </div>
       </section>
+
+      {/* Student Feedback Section */}
+      <FeedbackCarousel />
 
       {/* Why Choose Us Section */}
       <section>
@@ -121,9 +123,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* Student Feedback Section */}
-      <FeedbackCarousel />
 
       {/* Call to Action Section */}
       <section className="text-center bg-card/50 py-16 rounded-lg border">
