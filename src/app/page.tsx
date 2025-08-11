@@ -56,7 +56,7 @@ export default function HomePage() {
     <div className="space-y-20 md:space-y-32">
       {/* Hero Section */}
       <section className="text-center flex flex-col items-center">
-         <div className="relative w-full rounded-2xl overflow-hidden bg-muted/30 aspect-[4/3] md:aspect-[2.5/1]">
+         <div className="relative w-full rounded-2xl overflow-hidden bg-gradient-to-b from-muted/30 to-background aspect-[16/9] md:aspect-[16/7]">
              {isLoading ? (
                 <Skeleton className="h-full w-full" />
              ) : (
@@ -66,7 +66,7 @@ export default function HomePage() {
                         src={settings.heroBannerImageUrl}
                         alt="A student's journey towards success" 
                         fill
-                        className="object-cover"
+                        className="object-contain"
                         data-ai-hint="student journey achievement"
                         priority
                     />
