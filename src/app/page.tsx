@@ -90,7 +90,7 @@ export default function HomePage() {
         </div>
         <div className="mt-8">
           <Button asChild size="lg" className="rounded-full">
-              <Link href="/signup"><Rocket className="mr-2 h-5 w-5" /> Start Your Udaan</Link>
+              <Link href="/signup"><Rocket className="mr-2 h-5 w-5" /> Test Start Now</Link>
           </Button>
         </div>
       </section>
