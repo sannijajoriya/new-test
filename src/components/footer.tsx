@@ -47,9 +47,9 @@ export function Footer() {
           <div className="flex flex-col items-center md:items-start">
             <h4 className="font-semibold mb-2">Connect With Us</h4>
             <div className="flex gap-4">
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors"><Instagram /></Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors"><Twitter /></Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors"><TelegramIcon /></Link>
+              <Link href="https://www.instagram.com/udaansarthi?igsh=MWNhN21hczFuenBmeA==" className="text-muted-foreground hover:text-primary transition-colors"><Instagram /></Link>
+              <Link href="https://x.com/UdaanSarthi" className="text-muted-foreground hover:text-primary transition-colors"><Twitter /></Link>
+              <Link href="https://t.me/UdaanSarthi" className="text-muted-foreground hover:text-primary transition-colors"><TelegramIcon /></Link>
             </div>
             <div className="mt-4 flex items-center gap-2 text-muted-foreground">
                 <Mail className="h-4 w-4" />
