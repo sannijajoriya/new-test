@@ -1,5 +1,3 @@
-"use client";
-
 import { getPostData, getAllPostIds } from "@/lib/posts";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
@@ -39,7 +37,7 @@ export async function generateStaticParams() {
   }));
 }
 
-// ✅ Main Component
+// ✅ Main Component (server component)
 export default async function Post({ params }: PostParams) {
   try {
     const postData = await getPostData(params.slug);
