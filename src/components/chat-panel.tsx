@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useRef, useCallback, Suspense, useMemo } from 'react';
@@ -14,7 +13,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Send, Trash2 } from 'lucide-react';
-import { cn, useFormattedTimestamp } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { useFormattedTimestamp } from '@/hooks/use-formatted-timestamp';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { FullScreenImageViewer } from './full-screen-image-viewer';
@@ -42,7 +42,7 @@ function ChatMessageDisplay({ msg }: { msg: DirectMessage }) {
         <div className={cn("flex items-end gap-2", isStudent ? "justify-end" : "justify-start")}>
             {!isStudent && userToShow && (
                 <Avatar className="h-8 w-8 cursor-pointer" onClick={() => { if(userToShow.profilePictureUrl) setViewingImage(userToShow.profilePictureUrl); }}>
-                    <AvatarImage src={userToShow.profilePictureUrl || undefined} alt={userToShow.fullName} />
+                    <AvatarImage src={userToShow.profilePictureUrl || undefined} alt={userToShow.fullName || ''} />
                     <AvatarFallback>{userToShow.fullName?.charAt(0) || 'A'}</AvatarFallback>
                 </Avatar>
             )}
@@ -55,7 +55,7 @@ function ChatMessageDisplay({ msg }: { msg: DirectMessage }) {
             </div>
             {isStudent && userToShow && (
                 <Avatar className="h-8 w-8 cursor-pointer" onClick={() => { if(userToShow.profilePictureUrl) setViewingImage(userToShow.profilePictureUrl); }}>
-                    <AvatarImage src={userToShow.profilePictureUrl || undefined} alt={userToShow.fullName} />
+                    <AvatarImage src={userToShow.profilePictureUrl || undefined} alt={userToShow.fullName || ''} />
                     <AvatarFallback>{userToShow.fullName?.charAt(0)}</AvatarFallback>
                 </Avatar>
             )}
@@ -150,7 +150,7 @@ function ChatPanelComponent({ className, showHeader = true }: { className?: stri
                     <CardHeader className="flex flex-row items-center justify-between p-3 border-b bg-card/80">
                         <div className="flex items-center gap-3">
                             <Avatar>
-                                <AvatarImage src={adminUser.profilePictureUrl || undefined} alt={adminUser.fullName}/>
+                                <AvatarImage src={adminUser.profilePictureUrl || undefined} alt={adminUser.fullName || ''}/>
                                 <AvatarFallback>{adminUser.fullName?.charAt(0) || 'A'}</AvatarFallback>
                             </Avatar>
                             <div>
