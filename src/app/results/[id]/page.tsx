@@ -13,7 +13,8 @@ import { Trophy, CheckCircle, Clock, Lightbulb, XCircle, FileDown, MinusCircle, 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { cn, useFormattedTimestamp } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { useFormattedTimestamp } from '@/hooks/use-formatted-timestamp';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
