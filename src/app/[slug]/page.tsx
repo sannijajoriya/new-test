@@ -1,4 +1,4 @@
-
+"use client";
 import { getPostData, getAllPostIds } from '@/lib/posts';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
