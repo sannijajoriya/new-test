@@ -14,7 +14,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Send, Trash2 } from 'lucide-react';
-import { cn, useFormattedTimestamp } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { useFormattedTimestamp } from '@/hooks/use-formatted-timestamp';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { FullScreenImageViewer } from './full-screen-image-viewer';
@@ -70,8 +71,9 @@ function ChatMessageDisplay({ msg }: { msg: DirectMessage }) {
     );
 }
 
-function ChatPanelComponent({ className, showHeader = true }: { className?: string; showHeader?: boolean }) {
+function StudentChatPanelComponent({ className, showHeader = true }: { className?: string; showHeader?: boolean }) {
     const { data: user } = useUser();
+    const { settings } = useSiteSettings();
     const { toast } = useToast();
     const { data: chatThreads, updateItem: updateChatThread, deleteItem: deleteChatThread } = useChatThreads();
     
@@ -101,7 +103,7 @@ function ChatPanelComponent({ className, showHeader = true }: { className?: stri
 
 
     const handleSendMessage = async (data: ChatForm) => {
-        if (!user) return;
+        if (!user || !settings) return;
         try {
             const newMessage: DirectMessage = {
                 sender: 'student',
@@ -109,20 +111,28 @@ function ChatPanelComponent({ className, showHeader = true }: { className?: stri
                 timestamp: new Date(),
             };
             
-            const currentThread = thread ? { ...thread } : {
-                id: user.id,
-                studentId: user.id,
-                studentName: user.fullName,
-                messages: [],
-                lastMessageAt: new Date(), 
-                seenByAdmin: false,
-            };
+            const currentThread = chatThreads?.find(t => t.studentId === user.id);
+            let updatedThread;
 
-            currentThread.messages.push(newMessage);
-            currentThread.lastMessageAt = new Date();
-            currentThread.seenByAdmin = false;
+            if (!currentThread) {
+                updatedThread = {
+                    id: user.id,
+                    studentId: user.id,
+                    studentName: user.fullName,
+                    messages: [newMessage],
+                    lastMessageAt: new Date(), 
+                    seenByAdmin: false,
+                };
+            } else {
+                updatedThread = {
+                    ...currentThread,
+                    messages: [...currentThread.messages, newMessage],
+                    lastMessageAt: new Date(),
+                    seenByAdmin: false,
+                };
+            }
 
-            await updateChatThread(currentThread);
+            await updateChatThread(updatedThread);
             form.reset();
 
         } catch (e) {
@@ -214,7 +224,7 @@ function ChatPanelComponent({ className, showHeader = true }: { className?: stri
 }
 
 
-export function ChatPanel(props: { className?: string; showHeader?: boolean }) {
+export function StudentChatPanel(props: { className?: string; showHeader?: boolean }) {
     return (
       <Suspense fallback={
         <Card className={cn("flex flex-col", props.className)}>
@@ -242,7 +252,7 @@ export function ChatPanel(props: { className?: string; showHeader?: boolean }) {
             </CardFooter>
         </Card>
       }>
-        <ChatPanelComponent {...props} />
+        <StudentChatPanelComponent {...props} />
       </Suspense>
     );
 }
