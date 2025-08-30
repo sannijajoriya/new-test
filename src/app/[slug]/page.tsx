@@ -1,4 +1,3 @@
-
 import { getPostData, getAllPostIds } from '@/lib/posts';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
@@ -32,14 +31,13 @@ export async function generateStaticParams() {
   }));
 }
 
-
 export default async function Post({ params }) {
   try {
     const postData = await getPostData(params.slug);
     const postDate = format(new Date(postData.date), 'MMMM d, yyyy');
 
     return (
-        <div className="container mx-auto max-w-8xl py-8">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
             <article>
                 <Card>
                     <CardHeader className="text-center">
