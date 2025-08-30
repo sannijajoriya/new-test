@@ -39,7 +39,7 @@ export default async function Post({ params }) {
     const postDate = format(new Date(postData.date), 'MMMM d, yyyy');
 
     return (
-        <div className="container mx-auto max-w-4xl py-8">
+        <div className="container mx-auto max-w-8xl py-8">
             <article>
                 <Card>
                     <CardHeader className="text-center">
