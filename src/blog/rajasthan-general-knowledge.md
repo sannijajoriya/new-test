@@ -12,6 +12,7 @@ slug: "rajasthan-geography-gk"
 **Rajasthan GK (Geography)** प्रतियोगी परीक्षाओं के लिए हमेशा महत्वपूर्ण विषय रहा है।  
 राजस्थान भारत का क्षेत्रफल की दृष्टि से सबसे बड़ा राज्य है और इसकी भौगोलिक विविधता इसे अनोखा बनाती है।  
 
+[![Rajasthan-GK.png](https://i.postimg.cc/g0CHFfzr/Rajasthan-GK.png)](https://postimg.cc/mcSH7pFG)
 ---
 
 ## Table of Contents
