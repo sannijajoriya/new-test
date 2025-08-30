@@ -1,4 +1,3 @@
-
 import { getPostData, getAllPostIds } from '@/lib/posts';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
@@ -8,7 +7,6 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-// Generate metadata for each post
 export async function generateMetadata({ params }): Promise<Metadata> {
   try {
     const postData = await getPostData(params.slug);
@@ -24,7 +22,6 @@ export async function generateMetadata({ params }): Promise<Metadata> {
   }
 }
 
-// Generate static paths for all posts
 export async function generateStaticParams() {
   const paths = getAllPostIds();
   return paths.map(({ slug }) => ({
@@ -32,39 +29,40 @@ export async function generateStaticParams() {
   }));
 }
 
-
 export default async function Post({ params }) {
   try {
     const postData = await getPostData(params.slug);
     const postDate = format(new Date(postData.date), 'MMMM d, yyyy');
-
     return (
-        <div className="container mx-auto max-w-4xl py-8">
-            <article>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-4xl font-extrabold tracking-tight lg:text-5xl">{postData.title}</CardTitle>
-                        <CardDescription className="text-lg text-muted-foreground mt-2">
-                           Published on {postDate}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div 
-                            className="prose prose-lg dark:prose-invert max-w-none" 
-                            dangerouslySetInnerHTML={{ __html: postData.contentHtml }} 
-                        />
-                    </CardContent>
-                </Card>
-            </article>
-            <div className="mt-8">
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard" className="flex items-center gap-2">
-                        <ArrowLeft />
-                        Back to Dashboard
-                    </Link>
-                </Button>
-            </div>
+      <div className="container mx-auto max-w-4xl py-8">
+        <article>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-4xl font-extrabold tracking-tight lg:text-5xl">
+                {postData.title}
+              </CardTitle>
+              <CardDescription className="text-lg text-muted-foreground mt-2">
+                Published on {postDate}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose prose-lg dark:prose-invert max-w-none">
+                <div className="overflow-x-auto">
+                  <div dangerouslySetInnerHTML={{ __html: postData.contentHtml }} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </article>
+        <div className="mt-8">
+          <Button variant="outline" asChild>
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <ArrowLeft />
+              Back to Dashboard
+            </Link>
+          </Button>
         </div>
+      </div>
     );
   } catch (error) {
     notFound();
