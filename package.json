@@ -67,7 +67,7 @@
       "zod": "^3.24.2",
       "gray-matter": "^4.0.3",
       "remark": "^15.0.1",
-      "remark-html": "^16.0.1"
+      "remark-html": "^16.0.1",
       "remark-gfm": "^3.0.1"
     },
     "devDependencies": {
