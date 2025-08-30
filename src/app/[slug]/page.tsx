@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import type { Metadata } from 'next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Rocket } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -42,7 +42,7 @@ export default async function Post({ params }) {
         <div className="container mx-auto max-w-4xl py-8">
             <article>
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="text-center">
                         <CardTitle className="text-4xl font-extrabold tracking-tight lg:text-5xl">{postData.title}</CardTitle>
                         <CardDescription className="text-lg text-muted-foreground mt-2">
                            Published on {postDate}
@@ -50,17 +50,23 @@ export default async function Post({ params }) {
                     </CardHeader>
                     <CardContent>
                         <div 
-                            className="prose prose-lg dark:prose-invert max-w-none" 
+                            className="prose dark:prose-invert max-w-none" 
                             dangerouslySetInnerHTML={{ __html: postData.contentHtml }} 
                         />
                     </CardContent>
                 </Card>
             </article>
-            <div className="mt-8 text-center">
+            <div className="mt-8 text-center flex flex-col sm:flex-row justify-center items-center gap-4">
                 <Button variant="outline" asChild>
                     <Link href="/" className="flex items-center gap-2">
                         <ArrowLeft />
                         Back to Home
+                    </Link>
+                </Button>
+                 <Button variant="default" asChild>
+                    <Link href="/dashboard" className="flex items-center gap-2">
+                        <Rocket />
+                        Start Test Now
                     </Link>
                 </Button>
             </div>
