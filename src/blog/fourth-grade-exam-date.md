@@ -1,6 +1,6 @@
 ---
 title: "Rajasthan 4th Grade Exam Date 2025 Out | Rajasthan Fourth Grade Bharti Schedule, Posts, Selection Process"
-description: "Rajasthan 4th Grade Exam Date 2025 has been announced by RSMSSB. Check Rajasthan Fourth Grade Exam Schedule, Vacancy Details, Notification PDF, Admit Card, and Selection Process."
+description: "Rajasthan 4th Grade Exam Date 2025 has been announced by RSMSSB."
 keywords: ["Rajasthan 4th Grade Exam Date 2025", "Rajasthan Fourth Grade", "Rajasthan 4th Grade Vacancy", "Rajasthan 4th Grade Notification", "Rajasthan 4th Grade Exam Schedule", "Rajasthan 4th Grade Admit Card"]
 author: "Udaan Sarthi"
 date: "2025-09-01"
