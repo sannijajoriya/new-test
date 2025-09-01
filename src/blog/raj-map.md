@@ -307,4 +307,4 @@ slug: "raj-map"
 ### हमारे टेलीग्राम चैनल से जुड़ें  
 
 सभी विषयों (Subjects) के **Notes** और सभी सरकारी भर्तियों (Government Vacancies) की जानकारी **सबसे पहले पाने के लिए** हमारे Telegram चैनल को अभी जॉइन करें।  
-[UdaanSarthi](https://t.me/UdaanSarthi)
+                                             [Telegram-UdaanSarthi](https://t.me/UdaanSarthi)
