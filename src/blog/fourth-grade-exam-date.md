@@ -11,7 +11,7 @@ slug: "rajasthan-4th-grade-exam-date-2025"
 
 राजस्थान कर्मचारी चयन बोर्ड (RSMSSB) ने **चतुर्थ श्रेणी कर्मचारी भर्ती परीक्षा 2025 (Rajasthan 4th Grade Exam 2025)** की तिथियाँ जारी कर दी हैं।  
 यह परीक्षा **19 सितम्बर 2025 से 21 सितम्बर 2025** तक राज्यभर के विभिन्न केन्द्रों पर आयोजित की जाएगी।  
-
+![Rajasthan Fourth Grade Exam Schedule](/images/blog/fourth-grade-exam-date.jpg)
 
 ---
 
